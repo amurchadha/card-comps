@@ -302,9 +302,16 @@ export default function Home() {
                       {item.title}
                     </h3>
                     <div className="flex items-baseline justify-between">
-                      <span className="text-xl font-bold text-green-400">
-                        {getDisplayPrice(item)}
-                      </span>
+                      <div>
+                        <span className="text-xl font-bold text-green-400">
+                          {getDisplayPrice(item)}
+                        </span>
+                        {item.saleType === 'bestoffer' && item.BestOfferPrice !== '0.00' && (
+                          <span className="ml-2 text-sm text-gray-500 line-through">
+                            {formatPrice(item.currentPrice, item.currentPriceCurrency)}
+                          </span>
+                        )}
+                      </div>
                       {item.saleType === 'auction' && parseInt(item.bids) > 0 && (
                         <span className="text-xs text-gray-500">
                           {item.bids} bid{parseInt(item.bids) !== 1 ? 's' : ''}
