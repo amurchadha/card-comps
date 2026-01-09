@@ -312,8 +312,8 @@ export default function Home() {
                           </span>
                         )}
                       </div>
-                      {item.saleType === 'auction' && parseInt(item.bids) > 0 && (
-                        <span className="text-xs text-gray-500">
+                      {item.saleType === 'auction' && (
+                        <span className="text-sm text-orange-400 font-medium">
                           {item.bids} bid{parseInt(item.bids) !== 1 ? 's' : ''}
                         </span>
                       )}
