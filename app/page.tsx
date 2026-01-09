@@ -77,6 +77,27 @@ export default function Home() {
         const uniqueItems = Array.from(
           new Map(data.items.map(item => [item.itemId, item])).values()
         );
+
+        // Sort client-side to ensure correct ordering
+        uniqueItems.sort((a, b) => {
+          const priceA = parseFloat(a.salePrice) || 0;
+          const priceB = parseFloat(b.salePrice) || 0;
+          const dateA = new Date(a.endTime).getTime();
+          const dateB = new Date(b.endTime).getTime();
+
+          switch (sortOrder) {
+            case 'price_desc':
+              return priceB - priceA;
+            case 'price_asc':
+              return priceA - priceB;
+            case 'date_asc':
+              return dateA - dateB;
+            case 'date_desc':
+            default:
+              return dateB - dateA;
+          }
+        });
+
         setResults(uniqueItems);
         if (uniqueItems.length === 0) {
           setError('No sold listings found for this search');
