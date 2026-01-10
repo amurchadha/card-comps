@@ -56,30 +56,34 @@ export default function Home() {
     setHasSearched(true);
 
     try {
+      // Get user's timezone for the API
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      // 130point uses specific parameter names
       const params = new URLSearchParams({
         query: trimmedQuery,
-        sort: sortOrder,
-        tab_id: '1',
         type: searchType,
-        mp: 'ebay',
+        subcat: '',
+        tab_id: '1',
+        tz: timeZone,
+        sort: sortOrder,
       });
 
-      // Try direct request first (user's IP), fall back to proxy
+      // Direct to 130point - they allow CORS (Access-Control-Allow-Origin: *)
+      // User's residential IP should not be blocked like datacenter IPs
       let data: SearchResult;
 
-      try {
-        // Direct to 130point (uses user's residential IP)
-        const endpoint = searchType === 'for_sale'
-          ? 'https://back.130point.com/affiliate/'
-          : 'https://back.130point.com/sales/';
+      const endpoint = searchType === 'for_sale'
+        ? 'https://back.130point.com/affiliate/'
+        : 'https://back.130point.com/sales/';
 
+      try {
         const directResponse = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: params.toString(),
-          mode: 'cors',
         });
 
         const html = await directResponse.text();
@@ -89,20 +93,15 @@ export default function Home() {
           const items = JSON.parse('[' + jsonMatch[1] + ']');
           data = { success: true, items };
         } else if (html.includes('Error retrieving')) {
-          throw new Error('Blocked - trying proxy');
+          data = { success: false, error: 'Service temporarily unavailable. Please try again.', items: [] };
+        } else if (html.includes('No search query')) {
+          data = { success: false, error: 'Invalid search query', items: [] };
         } else {
           data = { success: false, error: 'No results found', items: [] };
         }
-      } catch {
-        // Fall back to our proxy
-        const response = await fetch('/api/search', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: params.toString(),
-        });
-        data = await response.json();
+      } catch (fetchError) {
+        console.error('Fetch error:', fetchError);
+        data = { success: false, error: 'Failed to connect to search service', items: [] };
       }
 
       if (data.success && data.items) {
