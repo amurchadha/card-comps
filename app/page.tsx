@@ -430,6 +430,9 @@ export default function Home() {
               <p className="text-gray-400 text-sm">
                 A product of Noshu LLC
               </p>
+              <p className="text-gray-500 text-xs mt-2">
+                Atlanta, GA
+              </p>
             </div>
           </div>
 
