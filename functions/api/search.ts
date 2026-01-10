@@ -68,7 +68,18 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: false, error: 'No results found', items: [] }), {
+    // Return debug info about what we received
+    return new Response(JSON.stringify({
+      success: false,
+      error: 'No results found',
+      items: [],
+      debug: {
+        htmlLength: html.length,
+        hasItemData: html.includes('itemData'),
+        hasError: html.includes('Error'),
+        snippet: html.substring(0, 500)
+      }
+    }), {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
