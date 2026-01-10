@@ -64,15 +64,46 @@ export default function Home() {
         mp: 'ebay',
       });
 
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: params.toString(),
-      });
+      // Try direct request first (user's IP), fall back to proxy
+      let data: SearchResult;
 
-      const data: SearchResult = await response.json();
+      try {
+        // Direct to 130point (uses user's residential IP)
+        const endpoint = searchType === 'for_sale'
+          ? 'https://back.130point.com/affiliate/'
+          : 'https://back.130point.com/sales/';
+
+        const directResponse = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: params.toString(),
+          mode: 'cors',
+        });
+
+        const html = await directResponse.text();
+        const jsonMatch = html.match(/id="itemData">\[([\s\S]*?)\]</);
+
+        if (jsonMatch) {
+          const items = JSON.parse('[' + jsonMatch[1] + ']');
+          data = { success: true, items };
+        } else if (html.includes('Error retrieving')) {
+          throw new Error('Blocked - trying proxy');
+        } else {
+          data = { success: false, error: 'No results found', items: [] };
+        }
+      } catch {
+        // Fall back to our proxy
+        const response = await fetch('/api/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: params.toString(),
+        });
+        data = await response.json();
+      }
 
       if (data.success && data.items) {
         // Remove duplicates by itemId
