@@ -5,8 +5,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   try {
     const body = await request.text();
+    const params = new URLSearchParams(body);
+    const searchType = params.get('type') || 'sold_items';
 
-    const response = await fetch('https://back.130point.com/sales/', {
+    // Use different endpoint for active listings vs sold
+    const endpoint = searchType === 'for_sale'
+      ? 'https://back.130point.com/affiliate/'
+      : 'https://back.130point.com/sales/';
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -25,14 +32,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     if (jsonMatch) {
       try {
         const items = JSON.parse('[' + jsonMatch[1] + ']');
-        return new Response(JSON.stringify({ success: true, items }), {
+        return new Response(JSON.stringify({ success: true, items, type: searchType }), {
           headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
           },
         });
       } catch {
-        // If JSON parsing fails, return the raw match for debugging
         return new Response(JSON.stringify({ success: false, error: 'JSON parse error', raw: jsonMatch[0].substring(0, 500) }), {
           headers: {
             'Content-Type': 'application/json',
@@ -69,7 +75,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       },
     });
 
-  } catch (error) {
+  } catch {
     return new Response(JSON.stringify({ success: false, error: 'Search failed' }), {
       status: 500,
       headers: {

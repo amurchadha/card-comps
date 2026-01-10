@@ -26,6 +26,7 @@ interface SearchResult {
 }
 
 type SortOption = 'date_desc' | 'date_asc' | 'price_desc' | 'price_asc';
+type SearchType = 'sold_items' | 'for_sale';
 
 export default function Home() {
   const [query, setQuery] = useState('');
@@ -34,6 +35,7 @@ export default function Home() {
   const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOption>('date_desc');
+  const [searchType, setSearchType] = useState<SearchType>('sold_items');
 
   const handleSearch = useCallback(async (e?: FormEvent) => {
     if (e) e.preventDefault();
@@ -58,7 +60,7 @@ export default function Home() {
         query: trimmedQuery,
         sort: sortOrder,
         tab_id: '1',
-        type: 'sold_items',
+        type: searchType,
         mp: 'ebay',
       });
 
@@ -100,7 +102,7 @@ export default function Home() {
 
         setResults(uniqueItems);
         if (uniqueItems.length === 0) {
-          setError('No sold listings found for this search');
+          setError(searchType === 'sold_items' ? 'No sold listings found' : 'No active listings found');
         }
       } else {
         setError(data.error || 'Search failed');
@@ -112,7 +114,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [query, sortOrder]);
+  }, [query, sortOrder, searchType]);
 
   const formatPrice = (price: string, currency: string) => {
     const num = parseFloat(price);
@@ -164,18 +166,42 @@ export default function Home() {
   } : null;
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-gray-950 flex flex-col">
       {/* Header */}
-      <header className="bg-gray-900 border-b border-gray-800">
+      <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <h1 className="text-3xl font-bold text-white">Card Comps</h1>
-          <p className="text-gray-400 mt-1">Search completed eBay sales for sports cards</p>
+          <p className="text-gray-400 mt-1">Search eBay sports card sales and listings</p>
         </div>
       </header>
 
       {/* Search Section */}
-      <section className="bg-gray-900/50 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+      <section className="bg-gray-900/50 border-b border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          {/* Search Type Tabs */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setSearchType('sold_items')}
+              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                searchType === 'sold_items'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              Sold Listings
+            </button>
+            <button
+              onClick={() => setSearchType('for_sale')}
+              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                searchType === 'for_sale'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              For Sale Now
+            </button>
+          </div>
+
           <form onSubmit={handleSearch} className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
@@ -183,7 +209,10 @@ export default function Home() {
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search sold cards (e.g., Michael Jordan Fleer rookie)"
+                  placeholder={searchType === 'sold_items'
+                    ? "Search sold cards (e.g., Michael Jordan Fleer rookie)"
+                    : "Search cards for sale (e.g., LeBron James Prizm)"
+                  }
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
@@ -218,7 +247,10 @@ export default function Home() {
               </div>
             </div>
             <p className="text-sm text-gray-500">
-              Tip: Use specific terms like player name + year + set for best results
+              {searchType === 'sold_items'
+                ? 'Find actual sold prices including accepted Best Offers'
+                : 'Find cards currently available for purchase'
+              }
             </p>
           </form>
         </div>
@@ -235,7 +267,7 @@ export default function Home() {
 
       {/* Stats Bar */}
       {stats && (
-        <div className="bg-gray-900/30 border-b border-gray-800">
+        <div className="bg-gray-900/30 border-b border-gray-700">
           <div className="max-w-7xl mx-auto px-4 py-4">
             <div className="flex flex-wrap gap-6 text-sm">
               <div>
@@ -243,7 +275,7 @@ export default function Home() {
                 <span className="text-white ml-2 font-semibold">{stats.count}</span>
               </div>
               <div>
-                <span className="text-gray-500">Average:</span>
+                <span className="text-gray-500">{searchType === 'sold_items' ? 'Avg Sold:' : 'Avg Price:'}</span>
                 <span className="text-green-400 ml-2 font-semibold">${stats.avg.toFixed(2)}</span>
               </div>
               <div>
@@ -256,7 +288,7 @@ export default function Home() {
       )}
 
       {/* Results */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-8 flex-1">
         {loading && (
           <div className="flex justify-center py-12">
             <svg className="w-12 h-12 text-blue-500 spinner" fill="none" viewBox="0 0 24 24">
@@ -268,9 +300,19 @@ export default function Home() {
 
         {!loading && !hasSearched && (
           <div className="text-center py-16">
-            <div className="text-6xl mb-4">🔍</div>
-            <h2 className="text-xl text-gray-400">Search for completed sales above</h2>
-            <p className="text-gray-600 mt-2">Find accurate sold prices for any sports card</p>
+            <div className="text-6xl mb-4">{searchType === 'sold_items' ? '📊' : '🛒'}</div>
+            <h2 className="text-xl text-gray-400">
+              {searchType === 'sold_items'
+                ? 'Search completed sales above'
+                : 'Search available listings above'
+              }
+            </h2>
+            <p className="text-gray-600 mt-2">
+              {searchType === 'sold_items'
+                ? 'Find accurate sold prices including Best Offer amounts'
+                : 'Find cards currently listed for sale on eBay'
+              }
+            </p>
           </div>
         )}
 
@@ -315,6 +357,12 @@ export default function Home() {
                     <div className={`absolute top-2 left-2 px-2 py-1 rounded text-xs font-semibold text-white ${saleType.color}`}>
                       {saleType.label}
                     </div>
+                    {/* For Sale indicator */}
+                    {searchType === 'for_sale' && (
+                      <div className="absolute top-2 right-2 px-2 py-1 rounded text-xs font-semibold bg-green-600 text-white">
+                        Active
+                      </div>
+                    )}
                   </div>
 
                   {/* Details */}
@@ -340,7 +388,7 @@ export default function Home() {
                       )}
                     </div>
                     <div className="mt-2 text-xs text-gray-500">
-                      Sold {formatDate(item.endTime)}
+                      {searchType === 'sold_items' ? 'Sold' : 'Listed'} {formatDate(item.endTime)}
                     </div>
                   </div>
                 </a>
@@ -351,9 +399,51 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-800 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 py-6 text-center text-gray-600 text-sm">
-          <p>Data sourced from completed eBay sales. Not affiliated with eBay Inc.</p>
+      <footer className="bg-gray-800 border-t border-gray-700 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* About */}
+            <div>
+              <h3 className="text-white font-semibold mb-3">Card Comps</h3>
+              <p className="text-gray-400 text-sm">
+                Search completed eBay sales and active listings for sports cards.
+                See actual sold prices including accepted Best Offer amounts.
+              </p>
+            </div>
+
+            {/* Links */}
+            <div>
+              <h3 className="text-white font-semibold mb-3">Legal</h3>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <a href="/privacy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</a>
+                </li>
+                <li>
+                  <a href="/terms" className="text-gray-400 hover:text-white transition-colors">Terms of Service</a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Company */}
+            <div>
+              <h3 className="text-white font-semibold mb-3">Company</h3>
+              <p className="text-gray-400 text-sm">
+                A product of Noshu LLC
+              </p>
+              <p className="text-gray-500 text-xs mt-2">
+                Austin, TX
+              </p>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-700 mt-8 pt-6 text-center">
+            <p className="text-gray-500 text-sm">
+              &copy; {new Date().getFullYear()} Noshu LLC. All rights reserved.
+            </p>
+            <p className="text-gray-600 text-xs mt-2">
+              Not affiliated with eBay Inc. Card images and data are property of their respective owners.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
