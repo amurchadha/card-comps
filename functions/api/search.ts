@@ -37,9 +37,14 @@ async function fetchFromRelay(query: string, searchType: string, apiKey: string)
       headers: {
         'Content-Type': 'application/json',
         'X-API-Key': apiKey,
+        'ngrok-skip-browser-warning': 'true',
       },
       body: JSON.stringify({ query, type: searchType }),
     });
+
+    if (!response.ok) {
+      return { success: false, error: `Relay error: ${response.status}` };
+    }
 
     return await response.json();
   } catch (error) {
