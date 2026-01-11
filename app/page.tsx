@@ -56,59 +56,19 @@ export default function Home() {
     setHasSearched(true);
 
     try {
-      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      let data: SearchResult;
-
-      // Strategy: Try direct first (user's IP), cache results, fallback to cached data
-      const directParams = new URLSearchParams({
+      // Call our API (handles caching + Puppeteer relay to 130point)
+      const params = new URLSearchParams({
         query: trimmedQuery,
         type: searchType,
-        subcat: '',
-        tab_id: '1',
-        tz: timeZone,
-        sort: sortOrder,
       });
 
-      const endpoint = searchType === 'for_sale'
-        ? 'https://back.130point.com/affiliate/'
-        : 'https://back.130point.com/sales/';
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      });
 
-      try {
-        // Direct request using user's residential IP
-        const directResponse = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: directParams.toString(),
-        });
-
-        const html = await directResponse.text();
-        const jsonMatch = html.match(/id="itemData">\[([\s\S]*?)\]</);
-
-        if (jsonMatch) {
-          const items = JSON.parse('[' + jsonMatch[1] + ']');
-          data = { success: true, items };
-
-          // Cache results in background (fire and forget)
-          fetch('/api/cache', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: trimmedQuery, type: searchType, items }),
-          }).catch(() => {}); // Ignore cache errors
-        } else if (html.includes('Error retrieving')) {
-          throw new Error('Direct blocked');
-        } else {
-          data = { success: true, items: [] };
-        }
-      } catch {
-        // Fallback to our cache
-        const cacheParams = new URLSearchParams({ query: trimmedQuery, type: searchType });
-        const cacheResponse = await fetch('/api/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: cacheParams.toString(),
-        });
-        data = await cacheResponse.json();
-      }
+      const data: SearchResult = await response.json();
 
       if (data.success && data.items) {
         // Remove duplicates by itemId
