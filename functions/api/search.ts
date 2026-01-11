@@ -52,8 +52,21 @@ async function fetchFromRelay(query: string, searchType: string, apiKey: string)
   }
 }
 
+// Filter items to ensure title contains search terms
+function filterRelevantItems(items: SaleItem[], query: string): SaleItem[] {
+  const searchTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 1);
+  return items.filter(item => {
+    const title = item.title.toLowerCase();
+    // All search terms must appear in the title
+    return searchTerms.every(term => title.includes(term));
+  });
+}
+
 // Store items in D1
 async function storeItems(items: SaleItem[], query: string, searchType: string, db: D1Database): Promise<void> {
+  // Filter to only relevant items before storing
+  const relevantItems = filterRelevantItems(items, query);
+
   try {
     // Update search cache
     await db.prepare(`
@@ -62,10 +75,10 @@ async function storeItems(items: SaleItem[], query: string, searchType: string, 
       ON CONFLICT(query, search_type) DO UPDATE SET
         last_fetched = datetime('now'),
         result_count = ?
-    `).bind(query.toLowerCase(), searchType, items.length, items.length).run();
+    `).bind(query.toLowerCase(), searchType, relevantItems.length, relevantItems.length).run();
 
     // Insert items (ignore duplicates)
-    for (const item of items) {
+    for (const item of relevantItems) {
       await db.prepare(`
         INSERT OR IGNORE INTO sales (
           item_id, title, sale_price, sale_price_currency,
@@ -179,12 +192,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const relayResult = await fetchFromRelay(query, searchType, env.RELAY_API_KEY || 'cardcomps_relay_2026');
 
     if (relayResult.success && relayResult.items && relayResult.items.length > 0) {
+      // Filter to relevant items only
+      const filteredItems = filterRelevantItems(relayResult.items, query);
+
       // Store in cache (don't await)
       context.waitUntil(storeItems(relayResult.items, query, searchType, env.DB));
 
       return new Response(JSON.stringify({
         success: true,
-        items: relayResult.items,
+        items: filteredItems,
         source: 'live'
       }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
