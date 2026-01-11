@@ -56,53 +56,21 @@ export default function Home() {
     setHasSearched(true);
 
     try {
-      // Get user's timezone for the API
-      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-      // 130point uses specific parameter names
+      // Route through our API (handles D1 caching + Oxylabs proxy)
       const params = new URLSearchParams({
         query: trimmedQuery,
         type: searchType,
-        subcat: '',
-        tab_id: '1',
-        tz: timeZone,
-        sort: sortOrder,
       });
 
-      // Direct to 130point - they allow CORS (Access-Control-Allow-Origin: *)
-      // User's residential IP should not be blocked like datacenter IPs
-      let data: SearchResult;
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+      });
 
-      const endpoint = searchType === 'for_sale'
-        ? 'https://back.130point.com/affiliate/'
-        : 'https://back.130point.com/sales/';
-
-      try {
-        const directResponse = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: params.toString(),
-        });
-
-        const html = await directResponse.text();
-        const jsonMatch = html.match(/id="itemData">\[([\s\S]*?)\]</);
-
-        if (jsonMatch) {
-          const items = JSON.parse('[' + jsonMatch[1] + ']');
-          data = { success: true, items };
-        } else if (html.includes('Error retrieving')) {
-          data = { success: false, error: 'Service temporarily unavailable. Please try again.', items: [] };
-        } else if (html.includes('No search query')) {
-          data = { success: false, error: 'Invalid search query', items: [] };
-        } else {
-          data = { success: false, error: 'No results found', items: [] };
-        }
-      } catch (fetchError) {
-        console.error('Fetch error:', fetchError);
-        data = { success: false, error: 'Failed to connect to search service', items: [] };
-      }
+      const data: SearchResult = await response.json();
 
       if (data.success && data.items) {
         // Remove duplicates by itemId

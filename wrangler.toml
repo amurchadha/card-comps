@@ -2,3 +2,8 @@
 name = "card-comps"
 compatibility_date = "2024-01-01"
 pages_build_output_dir = "out"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cards-comp-db"
+database_id = "54505640-37c0-4741-b5ab-dac873c476f8"
