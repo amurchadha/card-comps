@@ -19,7 +19,7 @@ interface SaleItem {
   shippingServiceCost: string;
 }
 
-const RELAY_URL = 'http://5.161.232.19:3847';
+const RELAY_URL = 'https://6da794159430.ngrok-free.app';
 
 // Check if cache is fresh (less than 6 hours old)
 function isCacheFresh(lastFetched: string): boolean {
