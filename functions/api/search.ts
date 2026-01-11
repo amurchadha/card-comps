@@ -19,7 +19,7 @@ interface SaleItem {
   shippingServiceCost: string;
 }
 
-const RELAY_URL = 'https://6da794159430.ngrok-free.app';
+const RELAY_URL = 'https://relay.steepforce.com';
 
 // Check if cache is fresh (less than 6 hours old)
 function isCacheFresh(lastFetched: string): boolean {
@@ -37,7 +37,6 @@ async function fetchFromRelay(query: string, searchType: string, apiKey: string)
       headers: {
         'Content-Type': 'application/json',
         'X-API-Key': apiKey,
-        'ngrok-skip-browser-warning': 'true',
       },
       body: JSON.stringify({ query, type: searchType }),
     });
