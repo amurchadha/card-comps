@@ -137,6 +137,10 @@ export default function Home() {
 
   const getSaleTypeLabel = (item: SaleItem) => {
     if (item.saleType === 'auction') {
+      // Auction with 0 bids = someone used Buy It Now
+      if (parseInt(item.bids) === 0) {
+        return { label: 'BIN', color: 'bg-blue-500' };
+      }
       return { label: 'Auction', color: 'bg-orange-500' };
     }
     if (item.saleType === 'bestoffer') {
@@ -389,7 +393,7 @@ export default function Home() {
                           </span>
                         )}
                       </div>
-                      {item.saleType === 'auction' && (
+                      {item.saleType === 'auction' && parseInt(item.bids) > 0 && (
                         <span className="text-sm text-orange-400 font-medium">
                           {item.bids} bid{parseInt(item.bids) !== 1 ? 's' : ''}
                         </span>
