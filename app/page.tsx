@@ -311,12 +311,9 @@ export default function Home() {
               Sold Listings
             </button>
             <button
-              onClick={() => setSearchType('for_sale')}
-              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                searchType === 'for_sale'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-              }`}
+              disabled
+              className="px-6 py-2 rounded-lg font-medium bg-gray-800 text-gray-600 cursor-not-allowed"
+              title="Coming soon"
             >
               For Sale Now
             </button>
