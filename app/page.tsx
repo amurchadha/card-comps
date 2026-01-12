@@ -57,6 +57,14 @@ export default function Home() {
   const [searchType, setSearchType] = useState<SearchType>('sold_items');
   const [timeRange, setTimeRange] = useState(365); // days
 
+  // Parse price safely
+  const parsePrice = (price: string | undefined | null): number => {
+    if (!price) return 0;
+    const cleaned = String(price).replace(/[^0-9.]/g, '');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? 0 : num;
+  };
+
   const handleSearch = useCallback(async (e?: FormEvent) => {
     if (e) e.preventDefault();
 
@@ -95,8 +103,8 @@ export default function Home() {
         );
 
         uniqueItems.sort((a, b) => {
-          const priceA = parseFloat(a.salePrice) || 0;
-          const priceB = parseFloat(b.salePrice) || 0;
+          const priceA = parsePrice(a.salePrice);
+          const priceB = parsePrice(b.salePrice);
           const dateA = new Date(a.endTime).getTime();
           const dateB = new Date(b.endTime).getTime();
 
@@ -150,9 +158,11 @@ export default function Home() {
     const byDate = new Map<string, number[]>();
     filtered.forEach(item => {
       const date = new Date(item.endTime).toISOString().split('T')[0];
-      const price = parseFloat(item.salePrice) || 0;
-      if (!byDate.has(date)) byDate.set(date, []);
-      byDate.get(date)!.push(price);
+      const price = parsePrice(item.salePrice);
+      if (price > 0) {
+        if (!byDate.has(date)) byDate.set(date, []);
+        byDate.get(date)!.push(price);
+      }
     });
 
     // Create data points
@@ -177,7 +187,9 @@ export default function Home() {
   const stats = useMemo(() => {
     if (results.length === 0) return null;
 
-    const prices = results.map(item => parseFloat(item.salePrice) || 0);
+    const prices = results.map(item => parsePrice(item.salePrice)).filter(p => p > 0);
+    if (prices.length === 0) return null;
+
     const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
 
     return {
