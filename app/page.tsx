@@ -1,6 +1,15 @@
 'use client';
 
-import { useState, useCallback, FormEvent } from 'react';
+import { useState, useCallback, FormEvent, useMemo } from 'react';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+} from 'recharts';
 
 interface SaleItem {
   itemId: string;
@@ -25,6 +34,16 @@ interface SearchResult {
   error?: string;
 }
 
+interface ChartDataPoint {
+  date: string;
+  timestamp: number;
+  price: number;
+  avg: number;
+  min: number;
+  max: number;
+  count: number;
+}
+
 type SortOption = 'date_desc' | 'date_asc' | 'price_desc' | 'price_asc';
 type SearchType = 'sold_items' | 'for_sale';
 
@@ -36,6 +55,7 @@ export default function Home() {
   const [hasSearched, setHasSearched] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOption>('date_desc');
   const [searchType, setSearchType] = useState<SearchType>('sold_items');
+  const [timeRange, setTimeRange] = useState(365); // days
 
   const handleSearch = useCallback(async (e?: FormEvent) => {
     if (e) e.preventDefault();
@@ -56,7 +76,6 @@ export default function Home() {
     setHasSearched(true);
 
     try {
-      // Call our API (handles caching + Puppeteer relay to 130point)
       const params = new URLSearchParams({
         query: trimmedQuery,
         type: searchType,
@@ -71,12 +90,10 @@ export default function Home() {
       const data: SearchResult = await response.json();
 
       if (data.success && data.items) {
-        // Remove duplicates by itemId
         const uniqueItems = Array.from(
           new Map(data.items.map(item => [item.itemId, item])).values()
         );
 
-        // Sort client-side to ensure correct ordering
         uniqueItems.sort((a, b) => {
           const priceA = parseFloat(a.salePrice) || 0;
           const priceB = parseFloat(b.salePrice) || 0;
@@ -112,11 +129,87 @@ export default function Home() {
     }
   }, [query, sortOrder, searchType]);
 
-  const formatPrice = (price: string, currency: string) => {
-    const num = parseFloat(price);
-    if (isNaN(num)) return price;
+  // Generate chart data from results
+  const chartData = useMemo(() => {
+    if (results.length === 0) return [];
 
-    if (currency === 'USD') {
+    const now = Date.now();
+    const cutoff = now - timeRange * 24 * 60 * 60 * 1000;
+
+    // Filter by time range and sort by date
+    const filtered = results
+      .filter(item => {
+        const date = new Date(item.endTime).getTime();
+        return date >= cutoff && date <= now;
+      })
+      .sort((a, b) => new Date(a.endTime).getTime() - new Date(b.endTime).getTime());
+
+    if (filtered.length === 0) return [];
+
+    // Group by date for aggregation
+    const byDate = new Map<string, number[]>();
+    filtered.forEach(item => {
+      const date = new Date(item.endTime).toISOString().split('T')[0];
+      const price = parseFloat(item.salePrice) || 0;
+      if (!byDate.has(date)) byDate.set(date, []);
+      byDate.get(date)!.push(price);
+    });
+
+    // Create data points
+    const points: ChartDataPoint[] = [];
+    byDate.forEach((prices, date) => {
+      const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+      points.push({
+        date,
+        timestamp: new Date(date).getTime(),
+        price: avg,
+        avg,
+        min: Math.min(...prices),
+        max: Math.max(...prices),
+        count: prices.length,
+      });
+    });
+
+    return points.sort((a, b) => a.timestamp - b.timestamp);
+  }, [results, timeRange]);
+
+  // Calculate overall stats
+  const stats = useMemo(() => {
+    if (results.length === 0) return null;
+
+    const prices = results.map(item => parseFloat(item.salePrice) || 0);
+    const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+
+    return {
+      count: results.length,
+      avg,
+      min: Math.min(...prices),
+      max: Math.max(...prices),
+    };
+  }, [results]);
+
+  // Chart stats (filtered by time range)
+  const chartStats = useMemo(() => {
+    if (chartData.length === 0) return null;
+
+    const prices = chartData.map(d => d.avg);
+    const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+    const recent = chartData.slice(-7);
+    const recentAvg = recent.length > 0
+      ? recent.map(d => d.avg).reduce((a, b) => a + b, 0) / recent.length
+      : avg;
+
+    const trend = recentAvg > avg ? 'up' : recentAvg < avg ? 'down' : 'flat';
+    const trendPct = avg > 0 ? ((recentAvg - avg) / avg) * 100 : 0;
+
+    return { avg, recentAvg, trend, trendPct };
+  }, [chartData]);
+
+  const formatPrice = (price: string | number, currency?: string) => {
+    const num = typeof price === 'string' ? parseFloat(price) : price;
+    if (isNaN(num)) return String(price);
+
+    if (!currency || currency === 'USD') {
       return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     return `${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
@@ -135,9 +228,17 @@ export default function Home() {
     }
   };
 
+  const formatChartDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
+
   const getSaleTypeLabel = (item: SaleItem) => {
     if (item.saleType === 'auction') {
-      // Auction with 0 bids = someone used Buy It Now
       if (parseInt(item.bids) === 0) {
         return { label: 'BIN', color: 'bg-blue-500' };
       }
@@ -150,20 +251,28 @@ export default function Home() {
   };
 
   const getDisplayPrice = (item: SaleItem) => {
-    // For best offer, show the accepted price
     if (item.saleType === 'bestoffer' && item.BestOfferPrice !== '0.00') {
       return formatPrice(item.BestOfferPrice, item.BestOfferPriceCurrency);
     }
     return formatPrice(item.salePrice, item.salePriceCurrency);
   };
 
-  // Calculate stats
-  const stats = results.length > 0 ? {
-    count: results.length,
-    avg: results.reduce((sum, item) => sum + parseFloat(item.salePrice), 0) / results.length,
-    min: Math.min(...results.map(item => parseFloat(item.salePrice))),
-    max: Math.max(...results.map(item => parseFloat(item.salePrice))),
-  } : null;
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: ChartDataPoint }> }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-gray-800 border border-gray-600 rounded-lg p-3 shadow-xl">
+          <p className="text-gray-400 text-xs mb-1">{formatDate(data.date)}</p>
+          <p className="text-green-400 font-bold">{formatPrice(data.avg)}</p>
+          <p className="text-gray-500 text-xs mt-1">
+            {data.count} sale{data.count !== 1 ? 's' : ''}
+            {data.count > 1 && ` (${formatPrice(data.min)} - ${formatPrice(data.max)})`}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col">
@@ -178,7 +287,6 @@ export default function Home() {
       {/* Search Section */}
       <section className="bg-gray-900/50 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          {/* Search Type Tabs */}
           <div className="flex gap-2 mb-6">
             <button
               onClick={() => setSearchType('sold_items')}
@@ -246,7 +354,7 @@ export default function Home() {
                 >
                   {loading ? (
                     <span className="flex items-center gap-2">
-                      <svg className="w-5 h-5 spinner" fill="none" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
@@ -277,6 +385,101 @@ export default function Home() {
         </div>
       )}
 
+      {/* Price Chart */}
+      {!loading && searchType === 'sold_items' && chartData.length > 0 && (
+        <section className="bg-gray-900/30 border-b border-gray-700">
+          <div className="max-w-7xl mx-auto px-4 py-6">
+            {/* Chart Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Price History</h2>
+                {chartStats && (
+                  <div className="flex items-center gap-4 mt-1">
+                    <span className="text-gray-400 text-sm">
+                      Avg: <span className="text-green-400 font-semibold">{formatPrice(chartStats.avg)}</span>
+                    </span>
+                    <span className={`text-sm font-medium flex items-center gap-1 ${
+                      chartStats.trend === 'up' ? 'text-green-400' :
+                      chartStats.trend === 'down' ? 'text-red-400' : 'text-gray-400'
+                    }`}>
+                      {chartStats.trend === 'up' && '↑'}
+                      {chartStats.trend === 'down' && '↓'}
+                      {chartStats.trend === 'flat' && '→'}
+                      {Math.abs(chartStats.trendPct).toFixed(1)}% (7d)
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Time Range Slider */}
+              <div className="flex items-center gap-3">
+                <span className="text-gray-500 text-sm">Range:</span>
+                <input
+                  type="range"
+                  min="30"
+                  max="730"
+                  step="30"
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(parseInt(e.target.value))}
+                  className="w-32 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+                <span className="text-white text-sm font-medium w-16">
+                  {timeRange >= 365 ? `${(timeRange / 365).toFixed(1)}y` : `${timeRange}d`}
+                </span>
+              </div>
+            </div>
+
+            {/* Chart */}
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={formatChartDate}
+                    stroke="#6b7280"
+                    tick={{ fill: '#9ca3af', fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={{ stroke: '#374151' }}
+                  />
+                  <YAxis
+                    tickFormatter={(val) => `$${val}`}
+                    stroke="#6b7280"
+                    tick={{ fill: '#9ca3af', fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={60}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  {chartStats && (
+                    <ReferenceLine
+                      y={chartStats.avg}
+                      stroke="#6b7280"
+                      strokeDasharray="3 3"
+                      label={{ value: 'Avg', fill: '#6b7280', fontSize: 10 }}
+                    />
+                  )}
+                  <Area
+                    type="monotone"
+                    dataKey="avg"
+                    stroke="#22c55e"
+                    strokeWidth={2}
+                    fill="url(#priceGradient)"
+                    dot={{ fill: '#22c55e', strokeWidth: 0, r: 3 }}
+                    activeDot={{ fill: '#22c55e', strokeWidth: 2, stroke: '#fff', r: 5 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Stats Bar */}
       {stats && (
         <div className="bg-gray-900/30 border-b border-gray-700">
@@ -288,11 +491,11 @@ export default function Home() {
               </div>
               <div>
                 <span className="text-gray-500">{searchType === 'sold_items' ? 'Avg Sold:' : 'Avg Price:'}</span>
-                <span className="text-green-400 ml-2 font-semibold">${stats.avg.toFixed(2)}</span>
+                <span className="text-green-400 ml-2 font-semibold">{formatPrice(stats.avg)}</span>
               </div>
               <div>
                 <span className="text-gray-500">Range:</span>
-                <span className="text-white ml-2 font-semibold">${stats.min.toFixed(2)} - ${stats.max.toFixed(2)}</span>
+                <span className="text-white ml-2 font-semibold">{formatPrice(stats.min)} - {formatPrice(stats.max)}</span>
               </div>
             </div>
           </div>
@@ -303,7 +506,7 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 py-8 flex-1">
         {loading && (
           <div className="flex justify-center py-12">
-            <svg className="w-12 h-12 text-blue-500 spinner" fill="none" viewBox="0 0 24 24">
+            <svg className="w-12 h-12 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
@@ -348,7 +551,6 @@ export default function Home() {
                   rel="noopener noreferrer"
                   className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden hover:border-gray-700 transition-colors group"
                 >
-                  {/* Image */}
                   <div className="aspect-square bg-gray-800 relative overflow-hidden">
                     {item.galleryURL ? (
                       <img
@@ -365,11 +567,9 @@ export default function Home() {
                         No Image
                       </div>
                     )}
-                    {/* Sale Type Badge */}
                     <div className={`absolute top-2 left-2 px-2 py-1 rounded text-xs font-semibold text-white ${saleType.color}`}>
                       {saleType.label}
                     </div>
-                    {/* For Sale indicator */}
                     {searchType === 'for_sale' && (
                       <div className="absolute top-2 right-2 px-2 py-1 rounded text-xs font-semibold bg-green-600 text-white">
                         Active
@@ -377,7 +577,6 @@ export default function Home() {
                     )}
                   </div>
 
-                  {/* Details */}
                   <div className="p-4">
                     <h3 className="text-white text-sm font-medium line-clamp-2 mb-2 group-hover:text-blue-400 transition-colors">
                       {item.title}
@@ -414,7 +613,6 @@ export default function Home() {
       <footer className="bg-gray-800 border-t border-gray-700 mt-auto">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="grid md:grid-cols-3 gap-8">
-            {/* About */}
             <div>
               <h3 className="text-white font-semibold mb-3">Card Comps</h3>
               <p className="text-gray-400 text-sm">
@@ -423,7 +621,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Links */}
             <div>
               <h3 className="text-white font-semibold mb-3">Legal</h3>
               <ul className="space-y-2 text-sm">
@@ -436,7 +633,6 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* Company */}
             <div>
               <h3 className="text-white font-semibold mb-3">Company</h3>
               <p className="text-gray-400 text-sm">

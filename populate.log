@@ -1,102 +1,231 @@
 === Card Comps DB Population ===
-Started: Sun Jan 11 05:22:41 PM UTC 2026
+Started: Sun Jan 11 06:13:52 PM UTC 2026
 Delay between searches: 60s
 
-[2026-01-11 17:22:41] Searching: mike trout
-  -> 200 items, 89606 bytes
-[2026-01-11 17:23:47] Searching: shohei ohtani
-  -> 200 items, 90398 bytes
-[2026-01-11 17:24:52] Searching: aaron judge
-  -> 200 items, 89653 bytes
-[2026-01-11 17:25:58] Searching: mookie betts
-  -> 200 items, 90216 bytes
-[2026-01-11 17:27:04] Searching: ronald acuna
-  -> 200 items, 90778 bytes
-[2026-01-11 17:28:10] Searching: juan soto
-  -> 200 items, 89624 bytes
-[2026-01-11 17:29:15] Searching: trea turner
-  -> 200 items, 90293 bytes
-[2026-01-11 17:30:21] Searching: freddie freeman
-  -> 200 items, 90521 bytes
-[2026-01-11 17:31:27] Searching: corey seager
+[2026-01-11 18:13:52] Searching: mike trout
+  -> 200 items, 89668 bytes
+[2026-01-11 18:14:59] Searching: shohei ohtani
+  -> 200 items, 90155 bytes
+[2026-01-11 18:16:05] Searching: aaron judge
+  -> 200 items, 89688 bytes
+[2026-01-11 18:17:11] Searching: mookie betts
+  -> 200 items, 90253 bytes
+[2026-01-11 18:18:16] Searching: ronald acuna
+  -> 200 items, 90830 bytes
+[2026-01-11 18:19:22] Searching: juan soto
+  -> 200 items, 89658 bytes
+[2026-01-11 18:20:31] Searching: trea turner
+  -> 200 items, 90329 bytes
+[2026-01-11 18:21:38] Searching: freddie freeman
+  -> 200 items, 90563 bytes
+[2026-01-11 18:22:44] Searching: corey seager
   -> 200 items, 89786 bytes
-[2026-01-11 17:32:33] Searching: manny machado
+[2026-01-11 18:23:49] Searching: manny machado
   -> 200 items, 90248 bytes
-[2026-01-11 17:33:38] Searching: bryce harper
-  -> 200 items, 89715 bytes
-[2026-01-11 17:34:44] Searching: pete alonso
-  -> 200 items, 89828 bytes
-[2026-01-11 17:35:50] Searching: vlad guerrero jr
+[2026-01-11 18:24:55] Searching: bryce harper
+  -> 200 items, 89675 bytes
+[2026-01-11 18:26:03] Searching: pete alonso
+  -> 200 items, 89830 bytes
+[2026-01-11 18:27:10] Searching: vlad guerrero jr
   -> 200 items, 91621 bytes
-[2026-01-11 17:36:55] Searching: julio rodriguez
-  -> 200 items, 90639 bytes
-[2026-01-11 17:38:00] Searching: bobby witt jr
-  -> 200 items, 90408 bytes
-[2026-01-11 17:39:04] Searching: gunnar henderson
-  -> 200 items, 90644 bytes
-[2026-01-11 17:40:10] Searching: corbin carroll
-  -> 200 items, 90766 bytes
-[2026-01-11 17:41:17] Searching: ken griffey jr
-  -> 200 items, 89838 bytes
-[2026-01-11 17:42:23] Searching: derek jeter
+[2026-01-11 18:28:16] Searching: julio rodriguez
+  -> 200 items, 90650 bytes
+[2026-01-11 18:29:23] Searching: bobby witt jr
+  -> 200 items, 90434 bytes
+[2026-01-11 18:30:30] Searching: gunnar henderson
+  -> 200 items, 90619 bytes
+[2026-01-11 18:31:36] Searching: corbin carroll
+  -> 200 items, 90730 bytes
+[2026-01-11 18:32:43] Searching: ken griffey jr
+  -> 200 items, 89826 bytes
+[2026-01-11 18:33:48] Searching: derek jeter
   -> 200 items, 89754 bytes
-[2026-01-11 17:43:27] Searching: mickey mantle
-  -> 200 items, 90190 bytes
-[2026-01-11 17:44:35] Searching: babe ruth
-  -> 200 items, 90032 bytes
-[2026-01-11 17:45:39] Searching: willie mays
-  -> 200 items, 89315 bytes
-[2026-01-11 17:46:47] Searching: hank aaron
-  -> 200 items, 89160 bytes
-[2026-01-11 17:47:52] Searching: jackie robinson
+[2026-01-11 18:34:54] Searching: mickey mantle
+  -> 200 items, 90209 bytes
+[2026-01-11 18:35:59] Searching: babe ruth
+  -> 200 items, 90013 bytes
+[2026-01-11 18:37:05] Searching: willie mays
+  -> 200 items, 89376 bytes
+[2026-01-11 18:38:11] Searching: hank aaron
+  -> 200 items, 89191 bytes
+[2026-01-11 18:39:17] Searching: jackie robinson
   -> 200 items, 90057 bytes
-[2026-01-11 17:48:59] Searching: ted williams
-  -> 200 items, 89875 bytes
-[2026-01-11 17:50:04] Searching: roberto clemente
-  -> 200 items, 89913 bytes
-[2026-01-11 17:51:10] Searching: nolan ryan
-  -> 200 items, 88660 bytes
-[2026-01-11 17:52:17] Searching: cal ripken jr
-  -> 200 items, 88836 bytes
-[2026-01-11 17:53:25] Searching: mike piazza
-  -> 200 items, 89358 bytes
-[2026-01-11 17:54:33] Searching: mariano rivera
+[2026-01-11 18:40:26] Searching: ted williams
+  -> 200 items, 89839 bytes
+[2026-01-11 18:41:32] Searching: roberto clemente
+  -> 200 items, 89893 bytes
+[2026-01-11 18:42:37] Searching: nolan ryan
+  -> 200 items, 88724 bytes
+[2026-01-11 18:43:43] Searching: cal ripken jr
+  -> 200 items, 89164 bytes
+[2026-01-11 18:44:49] Searching: mike piazza
+  -> 200 items, 89452 bytes
+[2026-01-11 18:45:55] Searching: mariano rivera
   -> 200 items, 89541 bytes
-[2026-01-11 17:55:41] Searching: david ortiz
+[2026-01-11 18:47:01] Searching: david ortiz
   -> 0 items, 55 bytes
   -> No results, short wait...
-[2026-01-11 17:56:17] Searching: ichiro suzuki
+[2026-01-11 18:47:36] Searching: ichiro suzuki
   -> 200 items, 89809 bytes
-[2026-01-11 17:57:24] Searching: albert pujols
+[2026-01-11 18:48:42] Searching: albert pujols
   -> 200 items, 89722 bytes
-[2026-01-11 17:58:31] Searching: michael jordan
+[2026-01-11 18:49:46] Searching: michael jordan
   -> 200 items, 89431 bytes
-[2026-01-11 17:59:37] Searching: lebron james
-  -> 200 items, 90268 bytes
-[2026-01-11 18:00:44] Searching: kobe bryant
-  -> 200 items, 89356 bytes
-[2026-01-11 18:01:50] Searching: shaquille oneal
-  -> 200 items, 91125 bytes
-[2026-01-11 18:02:59] Searching: stephen curry
-  -> 200 items, 90011 bytes
-[2026-01-11 18:04:05] Searching: kevin durant
-  -> 200 items, 90260 bytes
-[2026-01-11 18:05:13] Searching: giannis antetokounmpo
-  -> 200 items, 91085 bytes
-[2026-01-11 18:06:18] Searching: luka doncic
+[2026-01-11 18:50:51] Searching: lebron james
   -> 200 items, 89860 bytes
-[2026-01-11 18:07:24] Searching: jayson tatum
-  -> 200 items, 90353 bytes
-[2026-01-11 18:08:29] Searching: ja morant
-  -> 200 items, 90291 bytes
-[2026-01-11 18:09:35] Searching: zion williamson
+[2026-01-11 18:51:56] Searching: kobe bryant
+  -> 200 items, 89468 bytes
+[2026-01-11 18:53:00] Searching: shaquille oneal
+  -> 0 items, 55 bytes
+  -> No results, short wait...
+[2026-01-11 18:53:35] Searching: stephen curry
+  -> 200 items, 90001 bytes
+[2026-01-11 18:54:41] Searching: kevin durant
+  -> 200 items, 90269 bytes
+[2026-01-11 18:55:46] Searching: giannis antetokounmpo
+  -> 200 items, 91079 bytes
+[2026-01-11 18:56:53] Searching: luka doncic
+  -> 200 items, 89773 bytes
+[2026-01-11 18:57:58] Searching: jayson tatum
+  -> 200 items, 90390 bytes
+[2026-01-11 18:59:06] Searching: ja morant
+  -> 200 items, 90354 bytes
+[2026-01-11 19:00:13] Searching: zion williamson
   -> 200 items, 90372 bytes
- bytes
-[2026-01-11 18:06:18] Searching: jayson tatum card
-  -> 200 items, 90916 bytes
-[2026-01-11 18:07:24] Searching: ja morant card
-  -> 200 items, 90805 bytes
-[2026-01-11 18:08:29] Searching: zion williamson card
-  -> 200 items, 91096 bytes
-[2026-01-11 18:09:35] Searching: anthony edwards card
-  -> 200 items, 91086 bytes
+[2026-01-11 19:01:18] Searching: anthony edwards
+  -> 200 items, 90812 bytes
+[2026-01-11 19:02:24] Searching: victor wembanyama
+  -> 200 items, 90479 bytes
+[2026-01-11 19:03:32] Searching: magic johnson
+  -> 200 items, 90032 bytes
+[2026-01-11 19:04:37] Searching: larry bird
+  -> 200 items, 89346 bytes
+[2026-01-11 19:05:44] Searching: kareem abdul jabbar
+  -> 200 items, 90041 bytes
+[2026-01-11 19:06:52] Searching: tim duncan
+  -> 200 items, 89377 bytes
+[2026-01-11 19:07:59] Searching: dirk nowitzki
+  -> 0 items, 74 bytes
+  -> No results, short wait...
+[2026-01-11 19:08:32] Searching: allen iverson
+  -> 200 items, 89663 bytes
+[2026-01-11 19:09:39] Searching: vince carter
+  -> 200 items, 89543 bytes
+[2026-01-11 19:10:48] Searching: kevin garnett
+  -> 200 items, 90289 bytes
+[2026-01-11 19:11:55] Searching: charles barkley
+  -> 200 items, 89403 bytes
+[2026-01-11 19:13:06] Searching: hakeem olajuwon
+  -> 200 items, 89717 bytes
+[2026-01-11 19:14:13] Searching: scottie pippen
+  -> 0 items, 74 bytes
+  -> No results, short wait...
+[2026-01-11 19:14:43] Searching: dwyane wade
+  -> 0 items, 74 bytes
+  -> No results, short wait...
+[2026-01-11 19:15:13] Searching: carmelo anthony
+  -> 200 items, 90567 bytes
+[2026-01-11 19:16:20] Searching: chris paul
+  -> 200 items, 90197 bytes
+[2026-01-11 19:17:26] Searching: james harden
+  -> 200 items, 90212 bytes
+[2026-01-11 19:18:33] Searching: kyrie irving
+  -> 200 items, 90330 bytes
+[2026-01-11 19:19:40] Searching: kawhi leonard
+  -> 200 items, 90825 bytes
+[2026-01-11 19:20:46] Searching: damian lillard
+  -> 200 items, 90954 bytes
+[2026-01-11 19:21:53] Searching: patrick mahomes
+  -> 200 items, 90624 bytes
+[2026-01-11 19:23:00] Searching: josh allen
+  -> 200 items, 89625 bytes
+[2026-01-11 19:24:05] Searching: joe burrow
+  -> 200 items, 89871 bytes
+[2026-01-11 19:25:11] Searching: lamar jackson
+  -> 200 items, 90228 bytes
+[2026-01-11 19:26:18] Searching: jalen hurts
+  -> 200 items, 90386 bytes
+[2026-01-11 19:27:23] Searching: justin herbert
+  -> 200 items, 90429 bytes
+[2026-01-11 19:28:28] Searching: cj stroud
+  -> 200 items, 89815 bytes
+[2026-01-11 19:29:34] Searching: caleb williams
+  -> 200 items, 90623 bytes
+[2026-01-11 19:30:39] Searching: travis kelce
+  -> 200 items, 89703 bytes
+[2026-01-11 19:31:44] Searching: tyreek hill
+  -> 200 items, 89760 bytes
+[2026-01-11 19:32:51] Searching: justin jefferson
+  -> 200 items, 90480 bytes
+[2026-01-11 19:33:57] Searching: jamarr chase
+  -> 200 items, 90676 bytes
+[2026-01-11 19:35:01] Searching: ceedee lamb
+  -> 200 items, 89852 bytes
+[2026-01-11 19:36:09] Searching: davante adams
+  -> 200 items, 89818 bytes
+[2026-01-11 19:37:15] Searching: aj brown
+  -> 200 items, 90091 bytes
+[2026-01-11 19:38:21] Searching: stefon diggs
+  -> 0 items, 55 bytes
+  -> No results, short wait...
+[2026-01-11 19:38:57] Searching: derrick henry
+  -> 200 items, 89998 bytes
+[2026-01-11 19:40:04] Searching: christian mccaffrey
+  -> 0 items, 55 bytes
+  -> No results, short wait...
+[2026-01-11 19:40:40] Searching: saquon barkley
+  -> 200 items, 90325 bytes
+[2026-01-11 19:41:51] Searching: nick chubb
+  -> 0 items, 55 bytes
+  -> No results, short wait...
+[2026-01-11 19:42:27] Searching: micah parsons
+  -> 200 items, 90122 bytes
+[2026-01-11 19:43:33] Searching: tj watt
+  -> 200 items, 90033 bytes
+[2026-01-11 19:44:39] Searching: aaron donald
+  -> 0 items, 55 bytes
+  -> No results, short wait...
+[2026-01-11 19:45:15] Searching: myles garrett
+  -> 200 items, 89617 bytes
+[2026-01-11 19:46:22] Searching: tom brady
+  -> 200 items, 88839 bytes
+[2026-01-11 19:47:26] Searching: peyton manning
+  -> 200 items, 90116 bytes
+[2026-01-11 19:48:32] Searching: aaron rodgers
+  -> 200 items, 89635 bytes
+[2026-01-11 19:49:38] Searching: drew brees
+  -> 200 items, 89485 bytes
+[2026-01-11 19:50:44] Searching: brett favre
+  -> 200 items, 89045 bytes
+[2026-01-11 19:51:48] Searching: dan marino
+  -> 200 items, 89445 bytes
+[2026-01-11 19:52:52] Searching: joe montana
+  -> 0 items, 55 bytes
+  -> No results, short wait...
+[2026-01-11 19:53:27] Searching: john elway
+  -> 200 items, 89395 bytes
+[2026-01-11 19:54:32] Searching: jerry rice
+  -> 200 items, 89315 bytes
+[2026-01-11 19:55:36] Searching: randy moss
+  -> 200 items, 89341 bytes
+[2026-01-11 19:56:44] Searching: terrell owens
+  -> 200 items, 89751 bytes
+[2026-01-11 19:57:51] Searching: barry sanders
+  -> 200 items, 89203 bytes
+[2026-01-11 19:58:56] Searching: emmitt smith
+  -> 200 items, 89305 bytes
+[2026-01-11 20:00:01] Searching: walter payton
+  -> 200 items, 88883 bytes
+[2026-01-11 20:01:07] Searching: jim brown
+  -> 200 items, 89234 bytes
+[2026-01-11 20:02:16] Searching: lawrence taylor
+  -> 200 items, 89220 bytes
+[2026-01-11 20:03:21] Searching: ray lewis
+  -> 200 items, 88676 bytes
+[2026-01-11 20:04:27] Searching: deion sanders
+  -> 200 items, 88265 bytes
+[2026-01-11 20:05:32] Searching: bo jackson
+  -> 200 items, 89715 bytes
+
+=== Completed ===
+Finished: Sun Jan 11 08:06:36 PM UTC 2026
