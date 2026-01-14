@@ -1,0 +1,413 @@
+=== Comprehensive Database Population ===
+Started: Mon Jan 12 06:15:01 PM UTC 2026
+[18:15:01] 1952 topps mickey mantle
+  -> 200 items
+[18:16:18] 1952 topps willie mays
+  -> 200 items
+[18:17:39] 1952 topps jackie robinson
+  -> 200 items
+[18:18:44] 1952 topps eddie mathews
+  -> 145 items
+[18:19:48] 1952 topps pee wee reese
+  -> 109 items
+[18:20:53] 1953 topps mickey mantle
+  -> 200 items
+[18:21:57] 1953 topps willie mays
+  -> 200 items
+[18:23:03] 1953 topps satchel paige
+  -> 200 items
+[18:24:08] 1953 topps jackie robinson
+  -> 200 items
+[18:25:33] 1954 topps hank aaron
+  -> 200 items
+[18:26:41] 1954 topps ernie banks
+  -> 200 items
+[18:27:46] 1954 topps al kaline
+  -> 0 items
+[18:28:57] 1954 topps ted williams
+  -> 0 items
+[18:29:57] 1955 topps roberto clemente
+  -> 0 items
+[18:30:57] 1955 topps sandy koufax
+  -> 0 items
+[18:31:57] 1955 topps harmon killebrew
+  -> 0 items
+[18:32:58] 1955 topps willie mays
+  -> 0 items
+[18:33:58] 1956 topps mickey mantle
+  -> 0 items
+[18:35:28] 1956 topps willie mays
+  -> 0 items
+[18:36:28] 1956 topps roberto clemente
+  -> 0 items
+[18:37:29] 1956 topps jackie robinson
+  -> 200 items
+[18:38:36] 1957 topps mickey mantle
+  -> 200 items
+[18:39:40] 1957 topps ted williams
+  -> 200 items
+[18:41:07] 1957 topps willie mays
+  -> 200 items
+[18:42:11] 1957 topps frank robinson
+  -> 200 items
+[18:43:32] 1957 topps brooks robinson
+  -> 200 items
+[18:44:36] 1958 topps ted williams
+  -> 200 items
+[18:46:04] 1958 topps mickey mantle
+  -> 200 items
+[18:47:09] 1958 topps roger maris
+  -> 200 items
+[18:48:33] 1959 topps bob gibson
+  -> 200 items
+[18:50:01] 1959 topps mickey mantle
+  -> 200 items
+[18:51:07] 1959 topps willie mays
+  -> 200 items
+[18:52:12] 1960 topps carl yastrzemski
+  -> 200 items
+[18:53:26] 1961 topps juan marichal
+  -> 200 items
+[18:54:32] 1962 topps lou brock
+  -> 200 items
+[18:55:38] 1963 topps pete rose
+  -> 200 items
+[18:56:44] 1964 topps tony perez
+  -> 5 items
+[18:57:53] 1965 topps steve carlton
+  -> 200 items
+[18:59:21] 1965 topps joe morgan
+  -> 200 items
+[19:00:26] 1967 topps tom seaver
+  -> 200 items
+[19:01:31] 1967 topps rod carew
+  -> 200 items
+[19:02:36] 1968 topps nolan ryan
+  -> 200 items
+[19:03:41] 1968 topps johnny bench
+  -> 0 items
+[19:05:09] 1969 topps reggie jackson
+  -> 200 items
+[19:06:13] 1970 topps thurman munson
+  -> 200 items
+[19:07:18] 1971 topps bert blyleven
+  -> 200 items
+[19:08:24] 1973 topps mike schmidt
+  -> 200 items
+[19:09:31] 1973 topps dwight evans
+  -> 162 items
+[19:10:37] 1975 topps robin yount
+  -> 200 items
+[19:11:52] 1975 topps george brett
+  -> 200 items
+[19:12:58] 1975 topps gary carter
+  -> 200 items
+[19:14:04] 1977 topps andre dawson
+  -> 200 items
+[19:15:10] 1978 topps eddie murray
+  -> 200 items
+[19:16:16] 1979 topps ozzie smith
+  -> 200 items
+[19:17:22] 1961 fleer wilt chamberlain
+  -> 200 items
+[19:18:29] 1961 fleer oscar robertson
+  -> 200 items
+[19:19:37] 1961 fleer jerry west
+  -> 200 items
+[19:20:44] 1969 topps lew alcindor
+  -> 200 items
+[19:22:03] 1970 topps pete maravich
+  -> 200 items
+[19:23:10] 1972 topps julius erving
+  -> 200 items
+[19:24:16] 1974 topps bill walton
+  -> 200 items
+[19:25:22] 1980 topps magic johnson
+  -> 200 items
+[19:26:48] 1980 topps larry bird
+  -> 200 items
+[19:27:53] 1981 topps kevin mchale
+  -> 200 items
+[19:28:57] 1984 star michael jordan
+  -> 200 items
+[19:30:04] 1986 fleer michael jordan
+  -> 200 items
+[19:31:11] 1986 fleer charles barkley
+  -> 200 items
+[19:32:15] 1986 fleer hakeem olajuwon
+  -> 200 items
+[19:33:21] 1986 fleer karl malone
+  -> 200 items
+[19:34:26] 1986 fleer patrick ewing
+  -> 200 items
+[19:35:31] 1986 fleer isiah thomas
+  -> 200 items
+[19:36:37] 1986 fleer clyde drexler
+  -> 200 items
+[19:37:42] 1957 topps johnny unitas
+  -> 200 items
+[19:38:50] 1957 topps bart starr
+  -> 200 items
+[19:39:56] 1958 topps jim brown
+  -> 200 items
+[19:41:06] 1965 topps joe namath
+  -> 200 items
+[19:42:28] 1970 topps terry bradshaw
+  -> 6 items
+[19:43:41] 1971 topps joe greene
+  -> 200 items
+[19:44:47] 1976 topps walter payton
+  -> 200 items
+[19:46:09] 1981 topps joe montana
+  -> 200 items
+[19:47:16] 1984 topps john elway
+  -> 200 items
+[19:48:44] 1984 topps dan marino
+  -> 200 items
+[19:49:50] 1986 topps jerry rice
+  -> 200 items
+[19:50:57] 2011 topps update mike trout
+  -> 0 items
+[19:52:28] 2011 bowman chrome mike trout
+  -> 200 items
+[19:53:36] 2009 bowman chrome mike trout
+  -> 200 items
+[19:54:43] 2014 topps update mookie betts
+  -> 200 items
+[19:56:00] 2014 bowman chrome mookie betts
+  -> 200 items
+[19:57:07] 2018 topps update juan soto
+  -> 200 items
+[19:58:25] 2018 bowman chrome juan soto
+  -> 200 items
+[19:59:50] 2018 topps shohei ohtani
+  -> 200 items
+[20:00:57] 2018 bowman chrome ohtani
+  -> 200 items
+[20:02:16] 2018 topps chrome ohtani
+  -> 200 items
+[20:03:38] 2022 topps julio rodriguez
+  -> 200 items
+[20:04:42] 2022 bowman chrome julio rodriguez
+  -> 200 items
+[20:05:48] 2023 topps gunnar henderson
+  -> 200 items
+[20:06:53] 2023 bowman chrome gunnar henderson
+  -> 200 items
+[20:08:13] 2023 topps corbin carroll
+  -> 200 items
+[20:09:17] 2023 bowman chrome corbin carroll
+  -> 200 items
+[20:10:23] 2023 topps elly de la cruz
+  -> 200 items
+[20:11:29] 2023 bowman chrome elly de la cruz
+  -> 200 items
+[20:12:35] 2024 bowman chrome paul skenes
+  -> 200 items
+[20:13:50] 2023 bowman chrome jackson holliday
+  -> 200 items
+[20:14:56] 2023 bowman chrome jackson chourio
+  -> 200 items
+[20:16:03] 2022 bowman chrome druw jones
+  -> 11 items
+[20:17:15] 2003 topps chrome lebron james
+  -> 200 items
+[20:18:21] 2003 upper deck lebron james
+  -> 200 items
+[20:19:28] 2007 topps chrome kevin durant
+  -> 200 items
+[20:20:35] 2007 bowman chrome kevin durant
+  -> 187 items
+[20:21:43] 2009 topps chrome stephen curry
+  -> 200 items
+[20:22:48] 2009 panini stephen curry
+  -> 200 items
+[20:23:54] 2013 panini prizm giannis
+  -> 200 items
+[20:25:00] 2013 hoops giannis
+  -> 200 items
+[20:26:05] 2018 panini prizm luka doncic
+  -> 200 items
+[20:27:12] 2018 donruss optic luka doncic
+  -> 200 items
+[20:28:18] 2019 panini prizm ja morant
+  -> 200 items
+[20:29:24] 2019 donruss optic ja morant
+  -> 200 items
+[20:30:30] 2020 panini prizm anthony edwards
+  -> 200 items
+[20:31:36] 2020 donruss optic anthony edwards
+  -> 200 items
+[20:32:42] 2023 prizm victor wembanyama
+  -> 200 items
+[20:33:46] 2023 topps chrome victor wembanyama
+  -> 200 items
+[20:34:51] 2023 bowman chrome wembanyama
+  -> 20 items
+[20:35:57] 2022 prizm chet holmgren
+  -> 200 items
+[20:37:01] 2017 panini prizm patrick mahomes
+  -> 200 items
+[20:38:07] 2017 donruss optic patrick mahomes
+  -> 200 items
+[20:39:12] 2017 select patrick mahomes
+  -> 200 items
+[20:40:17] 2018 panini prizm josh allen
+  -> 200 items
+[20:41:21] 2018 donruss optic josh allen
+  -> 200 items
+[20:42:27] 2018 panini prizm lamar jackson
+  -> 200 items
+[20:43:35] 2018 donruss optic lamar jackson
+  -> 0 items
+[20:44:35] 2020 panini prizm joe burrow
+  -> 0 items
+[20:45:35] 2020 donruss optic joe burrow
+  -> 0 items
+[20:46:36] 2020 select joe burrow
+  -> 0 items
+[20:47:36] 2020 panini prizm justin herbert
+  -> 0 items
+[20:48:36] 2020 donruss optic justin herbert
+  -> 0 items
+[20:49:36] 2021 panini prizm trevor lawrence
+  -> 0 items
+[20:50:37] 2021 donruss optic trevor lawrence
+  -> 0 items
+[20:51:37] 2023 panini prizm cj stroud
+  -> 200 items
+[20:52:45] 2023 donruss optic cj stroud
+  -> 200 items
+[20:53:52] 2024 prizm caleb williams
+  -> 200 items
+[20:54:58] 2024 bowman chrome caleb williams
+  -> 23 items
+[20:56:11] 2023 prizm puka nacua
+  -> 200 items
+[20:57:18] 2023 donruss optic puka nacua
+  -> 200 items
+[20:58:26] 2024 prizm brock bowers
+  -> 200 items
+[20:59:33] 2024 prizm marvin harrison jr
+  -> 200 items
+[21:00:39] 2017 topps chrome mbappe
+  -> 200 items
+[21:01:45] 2018 panini prizm mbappe
+  -> 200 items
+[21:02:52] prizm mbappe world cup
+  -> 200 items
+[21:04:00] topps chrome haaland
+  -> 200 items
+[21:05:07] topps finest haaland
+  -> 200 items
+[21:06:15] prizm haaland
+  -> 200 items
+[21:07:21] topps chrome bellingham
+  -> 200 items
+[21:08:29] topps finest bellingham
+  -> 200 items
+[21:09:36] topps merlin bellingham
+  -> 200 items
+[21:10:44] topps chrome vinicius jr
+  -> 85 items
+[21:11:52] topps finest vinicius
+  -> 119 items
+[21:13:03] prizm vinicius jr
+  -> 81 items
+[21:14:09] topps chrome messi
+  -> 200 items
+[21:15:16] prizm messi world cup
+  -> 200 items
+[21:16:23] topps finest messi
+  -> 200 items
+[21:17:30] topps chrome ronaldo
+  -> 200 items
+[21:18:38] prizm ronaldo
+  -> 200 items
+[21:19:45] topps chrome lamine yamal
+  -> 200 items
+[21:20:51] topps finest lamine yamal
+  -> 200 items
+[21:22:01] topps chrome pedri
+  -> 200 items
+[21:23:08] topps chrome foden
+  -> 200 items
+[21:24:14] topps chrome saka
+  -> 200 items
+[21:25:20] topps chrome palmer
+  -> 200 items
+[21:26:27] topps chrome mainoo
+  -> 200 items
+[21:27:34] topps chrome garnacho refractor
+  -> 57 items
+[21:28:42] select garnacho
+  -> 147 items
+[21:29:49] donruss garnacho
+  -> 60 items
+[21:30:54] topps chrome zaire-emery
+  -> 200 items
+[21:31:59] topps finest zaire-emery
+  -> 83 items
+[21:33:05] topps chrome florian wirtz
+  -> 200 items
+[21:34:11] topps finest wirtz
+  -> 55 items
+[21:35:16] topps chrome musiala
+  -> 200 items
+[21:36:22] topps finest musiala
+  -> 89 items
+[21:37:27] prizm silver mahomes
+  -> 200 items
+[21:38:34] prizm silver wembanyama
+  -> 200 items
+[21:39:40] prizm silver burrow
+  -> 200 items
+[21:40:45] bowman chrome auto trout
+  -> 200 items
+[21:41:53] bowman chrome auto soto
+  -> 200 items
+[21:43:01] bowman chrome auto acuna auto
+  -> 0 items
+[21:44:01] topps chrome refractor ohtani
+  -> 0 items
+[21:45:02] topps chrome refractor julio rodriguez
+  -> 0 items
+[21:46:02] select tie-dye mahomes
+  -> 0 items
+[21:47:02] select tie-dye herbert
+  -> 0 items
+[21:48:02] donruss optic holo burrow
+  -> 0 items
+[21:49:02] donruss optic holo herbert
+  -> 0 items
+[21:50:03] psa 10 trout rookie
+  -> 0 items
+[21:51:03] psa 10 ohtani rookie
+  -> 0 items
+[21:52:03] psa 10 mahomes prizm
+  -> 0 items
+[21:53:04] psa 10 luka prizm
+  -> 200 items
+[21:54:15] psa 9 jordan fleer
+  -> 0 items
+[21:55:21] bgs 9.5 jordan fleer
+  -> 200 items
+[21:56:26] psa 8 mantle 1952
+  -> 0 items
+[21:57:32] psa 7 aaron rookie
+  -> 113 items
+[21:58:39] 2023 bowman chrome hobby box
+  -> 171 items
+[21:59:48] 2023 topps chrome hobby box
+  -> 200 items
+[22:00:54] 2023 prizm football hobby box
+  -> 90 items
+[22:02:01] 2023 prizm basketball hobby box
+  -> 182 items
+[22:03:09] 2024 bowman chrome hobby
+  -> 200 items
+[22:04:16] 2024 topps chrome hobby
+  -> 200 items
+
+=== Population Complete ===
+Finished: Mon Jan 12 10:05:21 PM UTC 2026
