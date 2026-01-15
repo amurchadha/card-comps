@@ -114,7 +114,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     if (!token) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'eBay authentication failed'
+        error: 'eBay authentication failed',
+        debug: { hasClientId: !!env.EBAY_CLIENT_ID, hasClientSecret: !!env.EBAY_CLIENT_SECRET }
       }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       });
@@ -146,7 +147,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     console.error('eBay live search error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: 'Search failed'
+      error: `Search failed: ${error instanceof Error ? error.message : String(error)}`
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
