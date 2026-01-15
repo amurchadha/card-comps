@@ -1,15 +1,6 @@
 'use client';
 
 import { useState, useCallback, FormEvent, useMemo } from 'react';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-} from 'recharts';
 
 interface SaleItem {
   itemId: string;
@@ -43,16 +34,6 @@ interface SearchResult {
   error?: string;
 }
 
-interface ChartDataPoint {
-  date: string;
-  timestamp: number;
-  price: number;
-  avg: number;
-  min: number;
-  max: number;
-  count: number;
-}
-
 type SortOption = 'date_desc' | 'date_asc' | 'price_desc' | 'price_asc';
 
 export default function Home() {
@@ -63,7 +44,6 @@ export default function Home() {
   const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOption>('date_desc');
-  const timeRange = 9999; // show all data
 
   // Parse price safely
   const parsePrice = (price: string | undefined | null): number => {
@@ -160,51 +140,32 @@ export default function Home() {
     }
   }, [query, sortOrder]);
 
-  // Generate chart data from results
-  const chartData = useMemo(() => {
-    if (results.length === 0) return [];
+  // Calculate price distribution
+  const priceDistribution = useMemo(() => {
+    if (results.length === 0) return null;
 
-    const now = Date.now();
-    const cutoff = now - timeRange * 24 * 60 * 60 * 1000;
+    const prices = results.map(item => parsePrice(item.salePrice)).filter(p => p > 0).sort((a, b) => a - b);
+    if (prices.length === 0) return null;
 
-    // Filter by time range and sort by date
-    const filtered = results
-      .filter(item => {
-        const date = new Date(item.endTime).getTime();
-        return date >= cutoff && date <= now;
-      })
-      .sort((a, b) => new Date(a.endTime).getTime() - new Date(b.endTime).getTime());
+    const median = prices.length % 2 === 0
+      ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2
+      : prices[Math.floor(prices.length / 2)];
 
-    if (filtered.length === 0) return [];
+    // Price ranges for histogram
+    const min = prices[0];
+    const max = prices[prices.length - 1];
+    const range = max - min;
+    const bucketSize = range / 5 || 1;
 
-    // Group by date for aggregation
-    const byDate = new Map<string, number[]>();
-    filtered.forEach(item => {
-      const date = new Date(item.endTime).toISOString().split('T')[0];
-      const price = parsePrice(item.salePrice);
-      if (price > 0) {
-        if (!byDate.has(date)) byDate.set(date, []);
-        byDate.get(date)!.push(price);
-      }
+    const buckets = Array(5).fill(0);
+    prices.forEach(p => {
+      const idx = Math.min(Math.floor((p - min) / bucketSize), 4);
+      buckets[idx]++;
     });
+    const maxBucket = Math.max(...buckets);
 
-    // Create data points
-    const points: ChartDataPoint[] = [];
-    byDate.forEach((prices, date) => {
-      const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-      points.push({
-        date,
-        timestamp: new Date(date).getTime(),
-        price: avg,
-        avg,
-        min: Math.min(...prices),
-        max: Math.max(...prices),
-        count: prices.length,
-      });
-    });
-
-    return points.sort((a, b) => a.timestamp - b.timestamp);
-  }, [results, timeRange]);
+    return { median, min, max, buckets, bucketSize, maxBucket };
+  }, [results]);
 
   // Calculate overall stats
   const stats = useMemo(() => {
@@ -222,23 +183,6 @@ export default function Home() {
       max: Math.max(...prices),
     };
   }, [results]);
-
-  // Chart stats (filtered by time range)
-  const chartStats = useMemo(() => {
-    if (chartData.length === 0) return null;
-
-    const prices = chartData.map(d => d.avg);
-    const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-    const recent = chartData.slice(-7);
-    const recentAvg = recent.length > 0
-      ? recent.map(d => d.avg).reduce((a, b) => a + b, 0) / recent.length
-      : avg;
-
-    const trend = recentAvg > avg ? 'up' : recentAvg < avg ? 'down' : 'flat';
-    const trendPct = avg > 0 ? ((recentAvg - avg) / avg) * 100 : 0;
-
-    return { avg, recentAvg, trend, trendPct };
-  }, [chartData]);
 
   const formatPrice = (price: string | number, currency?: string) => {
     const num = typeof price === 'string' ? parseFloat(price) : price;
@@ -263,15 +207,6 @@ export default function Home() {
     }
   };
 
-  const formatChartDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    } catch {
-      return dateStr;
-    }
-  };
-
   const getSaleTypeLabel = (item: SaleItem) => {
     if (item.saleType === 'auction') {
       if (parseInt(item.bids) === 0) {
@@ -290,23 +225,6 @@ export default function Home() {
       return formatPrice(item.BestOfferPrice, item.BestOfferPriceCurrency);
     }
     return formatPrice(item.salePrice, item.salePriceCurrency);
-  };
-
-  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: ChartDataPoint }> }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-gray-800 border border-gray-600 rounded-lg p-3 shadow-xl">
-          <p className="text-gray-400 text-xs mb-1">{formatDate(data.date)}</p>
-          <p className="text-green-400 font-bold">{formatPrice(data.avg)}</p>
-          <p className="text-gray-500 text-xs mt-1">
-            {data.count} sale{data.count !== 1 ? 's' : ''}
-            {data.count > 1 && ` (${formatPrice(data.min)} - ${formatPrice(data.max)})`}
-          </p>
-        </div>
-      );
-    }
-    return null;
   };
 
   return (
@@ -446,104 +364,53 @@ export default function Home() {
         </section>
       )}
 
-      {/* Price Chart */}
-      {!loading && chartData.length > 0 && (
+      {/* Price Stats */}
+      {stats && priceDistribution && (
         <section className="bg-gray-900/30 border-b border-gray-700">
           <div className="max-w-7xl mx-auto px-4 py-6">
-            {/* Chart Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
-              <div>
-                <h2 className="text-lg font-semibold text-white">Price History</h2>
-                {chartStats && (
-                  <div className="flex items-center gap-4 mt-1">
-                    <span className="text-gray-400 text-sm">
-                      Avg: <span className="text-green-400 font-semibold">{formatPrice(chartStats.avg)}</span>
-                    </span>
-                    <span className={`text-sm font-medium flex items-center gap-1 ${
-                      chartStats.trend === 'up' ? 'text-green-400' :
-                      chartStats.trend === 'down' ? 'text-red-400' : 'text-gray-400'
-                    }`}>
-                      {chartStats.trend === 'up' && '↑'}
-                      {chartStats.trend === 'down' && '↓'}
-                      {chartStats.trend === 'flat' && '→'}
-                      {Math.abs(chartStats.trendPct).toFixed(1)}% (7d)
-                    </span>
-                  </div>
-                )}
+            <h2 className="text-lg font-semibold text-white mb-4">Price Analysis</h2>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gray-800/50 rounded-lg p-4">
+                <div className="text-gray-400 text-sm">Results</div>
+                <div className="text-2xl font-bold text-white">{stats.count}</div>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-4">
+                <div className="text-gray-400 text-sm">Average</div>
+                <div className="text-2xl font-bold text-green-400">{formatPrice(stats.avg)}</div>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-4">
+                <div className="text-gray-400 text-sm">Median</div>
+                <div className="text-2xl font-bold text-blue-400">{formatPrice(priceDistribution.median)}</div>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-4">
+                <div className="text-gray-400 text-sm">Range</div>
+                <div className="text-lg font-bold text-white">{formatPrice(stats.min)} - {formatPrice(stats.max)}</div>
               </div>
             </div>
 
-            {/* Chart */}
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={formatChartDate}
-                    stroke="#6b7280"
-                    tick={{ fill: '#9ca3af', fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={{ stroke: '#374151' }}
-                  />
-                  <YAxis
-                    tickFormatter={(val) => `$${val}`}
-                    stroke="#6b7280"
-                    tick={{ fill: '#9ca3af', fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={60}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  {chartStats && (
-                    <ReferenceLine
-                      y={chartStats.avg}
-                      stroke="#6b7280"
-                      strokeDasharray="3 3"
-                      label={{ value: 'Avg', fill: '#6b7280', fontSize: 10 }}
+            {/* Price Distribution */}
+            <div className="text-gray-400 text-sm mb-2">Price Distribution</div>
+            <div className="flex items-end gap-1 h-16">
+              {priceDistribution.buckets.map((count, idx) => {
+                const height = priceDistribution.maxBucket > 0 ? (count / priceDistribution.maxBucket) * 100 : 0;
+                const rangeStart = priceDistribution.min + (idx * priceDistribution.bucketSize);
+                const rangeEnd = rangeStart + priceDistribution.bucketSize;
+                return (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-1">
+                    <div
+                      className="w-full bg-green-500/70 rounded-t transition-all"
+                      style={{ height: `${Math.max(height, 4)}%` }}
+                      title={`${formatPrice(rangeStart)} - ${formatPrice(rangeEnd)}: ${count} sales`}
                     />
-                  )}
-                  <Area
-                    type="monotone"
-                    dataKey="avg"
-                    stroke="#22c55e"
-                    strokeWidth={2}
-                    fill="url(#priceGradient)"
-                    dot={{ fill: '#22c55e', strokeWidth: 0, r: 3 }}
-                    activeDot={{ fill: '#22c55e', strokeWidth: 2, stroke: '#fff', r: 5 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+                    <span className="text-xs text-gray-500">{formatPrice(rangeStart)}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
-      )}
-
-      {/* Stats Bar */}
-      {stats && (
-        <div className="bg-gray-900/30 border-b border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex flex-wrap gap-6 text-sm">
-              <div>
-                <span className="text-gray-500">Results:</span>
-                <span className="text-white ml-2 font-semibold">{stats.count}</span>
-              </div>
-              <div>
-                <span className="text-gray-500">Avg Sold:</span>
-                <span className="text-green-400 ml-2 font-semibold">{formatPrice(stats.avg)}</span>
-              </div>
-              <div>
-                <span className="text-gray-500">Range:</span>
-                <span className="text-white ml-2 font-semibold">{formatPrice(stats.min)} - {formatPrice(stats.max)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Results */}
