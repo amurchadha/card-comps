@@ -63,7 +63,7 @@ export default function Home() {
   const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOption>('date_desc');
-  const [timeRange, setTimeRange] = useState(365); // days
+  const timeRange = 9999; // show all data
 
   // Parse price safely
   const parsePrice = (price: string | undefined | null): number => {
@@ -470,23 +470,6 @@ export default function Home() {
                     </span>
                   </div>
                 )}
-              </div>
-
-              {/* Time Range Slider */}
-              <div className="flex items-center gap-3">
-                <span className="text-gray-500 text-sm">Range:</span>
-                <input
-                  type="range"
-                  min="30"
-                  max="730"
-                  step="30"
-                  value={timeRange}
-                  onChange={(e) => setTimeRange(parseInt(e.target.value))}
-                  className="w-32 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                />
-                <span className="text-white text-sm font-medium w-16">
-                  {timeRange >= 365 ? `${(timeRange / 365).toFixed(1)}y` : `${timeRange}d`}
-                </span>
               </div>
             </div>
 
