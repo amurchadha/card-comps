@@ -121,20 +121,23 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       });
     }
 
-    // Search for live listings
-    const items = await searchEbay(query, token, 4);
+    // Search for live listings (get more than 4 in case some lack prices)
+    const items = await searchEbay(query, token, 12);
 
     // Transform to our format with affiliate links
     const campaignId = env.EBAY_CAMPAIGN_ID || '5339137501';
-    const transformedItems = items.map(item => ({
-      itemId: item.itemId.replace('v1|', '').split('|')[0],
-      title: item.title,
-      currentPrice: item.price.value,
-      currentPriceCurrency: item.price.currency,
-      galleryURL: item.image?.imageUrl || '',
-      ebayUrl: `${item.itemWebUrl}&mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=${campaignId}&toolid=10001&mkevt=1`,
-      condition: item.condition || 'Not specified',
-    }));
+    const transformedItems = items
+      .filter(item => item.price?.value) // Only items with valid prices
+      .slice(0, 4) // Take first 4
+      .map(item => ({
+        itemId: item.itemId.replace('v1|', '').split('|')[0],
+        title: item.title,
+        currentPrice: item.price.value,
+        currentPriceCurrency: item.price.currency,
+        galleryURL: item.image?.imageUrl || '',
+        ebayUrl: `${item.itemWebUrl}&mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=${campaignId}&toolid=10001&mkevt=1`,
+        condition: item.condition || 'Not specified',
+      }));
 
     return new Response(JSON.stringify({
       success: true,
