@@ -552,10 +552,15 @@ export default function Home() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {results.map((item) => {
               const saleType = getSaleTypeLabel(item);
+              const saleDate = new Date(item.endTime);
+              const daysSinceSale = Math.floor((Date.now() - saleDate.getTime()) / (1000 * 60 * 60 * 24));
+              const isOldListing = daysSinceSale > 90;
+              // eBay Partner Network affiliate link
+              const ebayUrl = `https://www.ebay.com/itm/${item.itemId}?mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=5339108022&toolid=10001&mkevt=1`;
               return (
                 <a
                   key={item.itemId}
-                  href={`https://www.ebay.com/itm/${item.itemId}`}
+                  href={ebayUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden hover:border-gray-700 transition-colors group"
@@ -582,6 +587,11 @@ export default function Home() {
                     {searchType === 'for_sale' && (
                       <div className="absolute top-2 right-2 px-2 py-1 rounded text-xs font-semibold bg-green-600 text-white">
                         Active
+                      </div>
+                    )}
+                    {isOldListing && searchType === 'sold_items' && (
+                      <div className="absolute top-2 right-2 px-2 py-1 rounded text-xs font-semibold bg-yellow-600 text-white" title="Listing may redirect to similar items">
+                        90+ days
                       </div>
                     )}
                   </div>
