@@ -52,13 +52,36 @@ async function fetchFromRelay(query: string, searchType: string, apiKey: string)
   }
 }
 
-// Filter items to ensure title contains search terms
+// Common abbreviation mappings
+const TERM_ALIASES: Record<string, string[]> = {
+  'autographs': ['auto', 'autograph', 'autographed', 'autos'],
+  'autograph': ['auto', 'autographs', 'autographed', 'autos'],
+  'auto': ['autograph', 'autographs', 'autographed'],
+  'refractor': ['refractors', 'ref'],
+  'refractors': ['refractor', 'ref'],
+  'rookie': ['rc', 'rookies'],
+  'rc': ['rookie', 'rookies'],
+  'parallel': ['parallels', '/'],
+  'numbered': ['#', '/'],
+  'prizm': ['prism'],
+  'psa': ['bgs', 'sgc', 'cgc'],
+};
+
+// Filter items to ensure title contains search terms (with alias support)
 function filterRelevantItems(items: SaleItem[], query: string): SaleItem[] {
   const searchTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 1);
   return items.filter(item => {
     const title = item.title.toLowerCase();
-    // All search terms must appear in the title
-    return searchTerms.every(term => title.includes(term));
+    // All search terms (or their aliases) must appear in the title
+    return searchTerms.every(term => {
+      if (title.includes(term)) return true;
+      // Check aliases
+      const aliases = TERM_ALIASES[term];
+      if (aliases) {
+        return aliases.some(alias => title.includes(alias));
+      }
+      return false;
+    });
   });
 }
 
