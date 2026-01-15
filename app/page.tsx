@@ -45,16 +45,15 @@ interface ChartDataPoint {
 }
 
 type SortOption = 'date_desc' | 'date_asc' | 'price_desc' | 'price_asc';
-type SearchType = 'sold_items' | 'for_sale';
 
 export default function Home() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SaleItem[]>([]);
+  const [liveListings, setLiveListings] = useState<SaleItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOption>('date_desc');
-  const [searchType, setSearchType] = useState<SearchType>('sold_items');
   const [timeRange, setTimeRange] = useState(365); // days
 
   // Parse price safely
@@ -84,22 +83,27 @@ export default function Home() {
     setHasSearched(true);
 
     try {
-      const params = new URLSearchParams({
-        query: trimmedQuery,
-        type: searchType,
-      });
+      // Fetch both sold items and live listings in parallel
+      const [soldResponse, liveResponse] = await Promise.all([
+        fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ query: trimmedQuery, type: 'sold_items' }).toString(),
+        }),
+        fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ query: trimmedQuery, type: 'for_sale' }).toString(),
+        }),
+      ]);
 
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: params.toString(),
-      });
+      const soldData: SearchResult = await soldResponse.json();
+      const liveData: SearchResult = await liveResponse.json();
 
-      const data: SearchResult = await response.json();
-
-      if (data.success && data.items) {
+      // Process sold items
+      if (soldData.success && soldData.items) {
         const uniqueItems = Array.from(
-          new Map(data.items.map(item => [item.itemId, item])).values()
+          new Map(soldData.items.map(item => [item.itemId, item])).values()
         );
 
         uniqueItems.sort((a, b) => {
@@ -123,19 +127,30 @@ export default function Home() {
 
         setResults(uniqueItems);
         if (uniqueItems.length === 0) {
-          setError(searchType === 'sold_items' ? 'No sold listings found' : 'No active listings found');
+          setError('No sold listings found');
         }
       } else {
-        setError(data.error || 'Search failed');
+        setError(soldData.error || 'Search failed');
         setResults([]);
+      }
+
+      // Process live listings (take first 4)
+      if (liveData.success && liveData.items) {
+        const uniqueLive = Array.from(
+          new Map(liveData.items.map(item => [item.itemId, item])).values()
+        ).slice(0, 4);
+        setLiveListings(uniqueLive);
+      } else {
+        setLiveListings([]);
       }
     } catch {
       setError('Failed to connect to search service');
       setResults([]);
+      setLiveListings([]);
     } finally {
       setLoading(false);
     }
-  }, [query, sortOrder, searchType]);
+  }, [query, sortOrder]);
 
   // Generate chart data from results
   const chartData = useMemo(() => {
@@ -299,26 +314,7 @@ export default function Home() {
       {/* Search Section */}
       <section className="bg-gray-900/50 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex gap-2 mb-6">
-            <button
-              onClick={() => setSearchType('sold_items')}
-              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                searchType === 'sold_items'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-              }`}
-            >
-              Sold Listings
-            </button>
-            <button
-              disabled
-              className="px-6 py-2 rounded-lg font-medium bg-gray-800 text-gray-600 cursor-not-allowed"
-              title="Coming soon"
-            >
-              For Sale Now
-            </button>
-          </div>
-
+          
           <form onSubmit={handleSearch} className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 relative">
@@ -326,10 +322,7 @@ export default function Home() {
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={searchType === 'sold_items'
-                    ? "Search sold cards (e.g., Michael Jordan Fleer rookie)"
-                    : "Search cards for sale (e.g., LeBron James Prizm)"
-                  }
+                  placeholder="Search sold cards (e.g., Michael Jordan Fleer rookie)"
                   className="w-full px-4 py-3 pr-10 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
                 {query && (
@@ -376,10 +369,7 @@ export default function Home() {
               </div>
             </div>
             <p className="text-sm text-gray-500">
-              {searchType === 'sold_items'
-                ? 'Find actual sold prices including accepted Best Offers'
-                : 'Find cards currently available for purchase'
-              }
+              Find actual sold prices including accepted Best Offers
             </p>
           </form>
         </div>
@@ -394,8 +384,65 @@ export default function Home() {
         </div>
       )}
 
+      {/* Live Listings */}
+      {!loading && liveListings.length > 0 && (
+        <section className="bg-gradient-to-r from-green-900/20 to-blue-900/20 border-b border-gray-700">
+          <div className="max-w-7xl mx-auto px-4 py-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  Available Now on eBay
+                </h2>
+                <p className="text-gray-400 text-sm mt-1">Live listings you can buy right now</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {liveListings.map((item) => {
+                const ebayUrl = `https://www.ebay.com/itm/${item.itemId}?mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=5339137501&toolid=10001&mkevt=1`;
+                return (
+                  <a
+                    key={item.itemId}
+                    href={ebayUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-gray-900/80 border border-green-800/50 rounded-lg overflow-hidden hover:border-green-600 transition-colors group"
+                  >
+                    <div className="aspect-square bg-gray-800 relative overflow-hidden">
+                      {item.galleryURL ? (
+                        <img
+                          src={item.galleryURL.replace('s-l225', 's-l500')}
+                          alt={item.title}
+                          className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-600">
+                          No Image
+                        </div>
+                      )}
+                      <div className="absolute top-2 left-2 px-2 py-1 rounded text-xs font-semibold bg-green-600 text-white">
+                        BUY NOW
+                      </div>
+                    </div>
+                    <div className="p-3">
+                      <h3 className="text-white text-xs font-medium line-clamp-2 mb-2 group-hover:text-green-400 transition-colors">
+                        {item.title}
+                      </h3>
+                      <span className="text-lg font-bold text-green-400">
+                        {formatPrice(item.currentPrice, item.currentPriceCurrency)}
+                      </span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Price Chart */}
-      {!loading && searchType === 'sold_items' && chartData.length > 0 && (
+      {!loading && chartData.length > 0 && (
         <section className="bg-gray-900/30 border-b border-gray-700">
           <div className="max-w-7xl mx-auto px-4 py-6">
             {/* Chart Header */}
@@ -499,7 +546,7 @@ export default function Home() {
                 <span className="text-white ml-2 font-semibold">{stats.count}</span>
               </div>
               <div>
-                <span className="text-gray-500">{searchType === 'sold_items' ? 'Avg Sold:' : 'Avg Price:'}</span>
+                <span className="text-gray-500">Avg Sold:</span>
                 <span className="text-green-400 ml-2 font-semibold">{formatPrice(stats.avg)}</span>
               </div>
               <div>
@@ -524,19 +571,9 @@ export default function Home() {
 
         {!loading && !hasSearched && (
           <div className="text-center py-16">
-            <div className="text-6xl mb-4">{searchType === 'sold_items' ? '📊' : '🛒'}</div>
-            <h2 className="text-xl text-gray-400">
-              {searchType === 'sold_items'
-                ? 'Search completed sales above'
-                : 'Search available listings above'
-              }
-            </h2>
-            <p className="text-gray-600 mt-2">
-              {searchType === 'sold_items'
-                ? 'Find accurate sold prices including Best Offer amounts'
-                : 'Find cards currently listed for sale on eBay'
-              }
-            </p>
+            <div className="text-6xl mb-4">📊</div>
+            <h2 className="text-xl text-gray-400">Search completed sales above</h2>
+            <p className="text-gray-600 mt-2">Find accurate sold prices including Best Offer amounts</p>
           </div>
         )}
 
@@ -554,7 +591,7 @@ export default function Home() {
               const saleType = getSaleTypeLabel(item);
               const saleDate = new Date(item.endTime);
               const daysSinceSale = Math.floor((Date.now() - saleDate.getTime()) / (1000 * 60 * 60 * 24));
-              const isOldListing = daysSinceSale > 90;
+              const isOldListing = daysSinceSale > 14;
               // eBay Partner Network affiliate link
               const ebayUrl = `https://www.ebay.com/itm/${item.itemId}?mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=5339137501&toolid=10001&mkevt=1`;
               return (
@@ -584,14 +621,9 @@ export default function Home() {
                     <div className={`absolute top-2 left-2 px-2 py-1 rounded text-xs font-semibold text-white ${saleType.color}`}>
                       {saleType.label}
                     </div>
-                    {searchType === 'for_sale' && (
-                      <div className="absolute top-2 right-2 px-2 py-1 rounded text-xs font-semibold bg-green-600 text-white">
-                        Active
-                      </div>
-                    )}
-                    {isOldListing && searchType === 'sold_items' && (
+                                        {isOldListing && (
                       <div className="absolute top-2 right-2 px-2 py-1 rounded text-xs font-semibold bg-yellow-600 text-white" title="Listing may redirect to similar items">
-                        90+ days
+                        14+ days
                       </div>
                     )}
                   </div>
@@ -618,7 +650,7 @@ export default function Home() {
                       )}
                     </div>
                     <div className="mt-2 text-xs text-gray-500">
-                      {searchType === 'sold_items' ? 'Sold' : 'Listed'} {formatDate(item.endTime)}
+                      Sold {formatDate(item.endTime)}
                     </div>
                   </div>
                 </a>
@@ -631,12 +663,26 @@ export default function Home() {
       {/* Footer */}
       <footer className="bg-gray-800 border-t border-gray-700 mt-auto">
         <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Affiliate Disclosure */}
+          <div className="bg-blue-900/30 border border-blue-800/50 rounded-lg p-4 mb-8">
+            <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              Affiliate Disclosure
+            </h3>
+            <p className="text-gray-300 text-sm">
+              Card Comps is a participant in the <strong>eBay Partner Network</strong>, an affiliate advertising program designed to provide a means for sites to earn advertising fees by advertising and linking to eBay.com. When you click on links to eBay listings on this site and make a purchase, we may earn a commission at no additional cost to you.
+            </p>
+          </div>
+
           <div className="grid md:grid-cols-3 gap-8">
             <div>
               <h3 className="text-white font-semibold mb-3">Card Comps</h3>
               <p className="text-gray-400 text-sm">
-                Search completed eBay sales and active listings for sports cards.
+                Search completed eBay sales for sports cards and collectibles.
                 See actual sold prices including accepted Best Offer amounts.
+                Find live listings to purchase through our affiliate links.
               </p>
             </div>
 
@@ -648,6 +694,9 @@ export default function Home() {
                 </li>
                 <li>
                   <a href="/terms" className="text-gray-400 hover:text-white transition-colors">Terms of Service</a>
+                </li>
+                <li>
+                  <a href="/affiliate-disclosure" className="text-gray-400 hover:text-white transition-colors">Affiliate Disclosure</a>
                 </li>
               </ul>
             </div>
@@ -668,7 +717,7 @@ export default function Home() {
               &copy; {new Date().getFullYear()} Noshu LLC. All rights reserved.
             </p>
             <p className="text-gray-600 text-xs mt-2">
-              Not affiliated with eBay Inc. Card images and data are property of their respective owners.
+              As an eBay Partner, we earn from qualifying purchases. Card images and data are property of their respective owners.
             </p>
           </div>
         </div>
