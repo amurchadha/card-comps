@@ -556,7 +556,7 @@ export default function Home() {
               const daysSinceSale = Math.floor((Date.now() - saleDate.getTime()) / (1000 * 60 * 60 * 24));
               const isOldListing = daysSinceSale > 90;
               // eBay Partner Network affiliate link
-              const ebayUrl = `https://www.ebay.com/itm/${item.itemId}?mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=6881131&toolid=10001&mkevt=1`;
+              const ebayUrl = `https://www.ebay.com/itm/${item.itemId}?mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=5339137501&toolid=10001&mkevt=1`;
               return (
                 <a
                   key={item.itemId}
