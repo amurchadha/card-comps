@@ -28,6 +28,15 @@ interface SaleItem {
   source: string;
 }
 
+interface LiveListing {
+  itemId: string;
+  title: string;
+  currentPrice: string;
+  currentPriceCurrency: string;
+  galleryURL: string;
+  ebayUrl: string;
+}
+
 interface SearchResult {
   success: boolean;
   items?: SaleItem[];
@@ -49,7 +58,7 @@ type SortOption = 'date_desc' | 'date_asc' | 'price_desc' | 'price_asc';
 export default function Home() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SaleItem[]>([]);
-  const [liveListings, setLiveListings] = useState<SaleItem[]>([]);
+  const [liveListings, setLiveListings] = useState<LiveListing[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
@@ -83,22 +92,14 @@ export default function Home() {
     setHasSearched(true);
 
     try {
-      // Fetch both sold items and live listings in parallel
-      const [soldResponse, liveResponse] = await Promise.all([
-        fetch('/api/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ query: trimmedQuery, type: 'sold_items' }).toString(),
-        }),
-        fetch('/api/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ query: trimmedQuery, type: 'for_sale' }).toString(),
-        }),
-      ]);
+      // Fetch sold items
+      const soldResponse = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ query: trimmedQuery, type: 'sold_items' }).toString(),
+      });
 
       const soldData: SearchResult = await soldResponse.json();
-      const liveData: SearchResult = await liveResponse.json();
 
       // Process sold items
       if (soldData.success && soldData.items) {
@@ -134,13 +135,20 @@ export default function Home() {
         setResults([]);
       }
 
-      // Process live listings (take first 4)
-      if (liveData.success && liveData.items) {
-        const uniqueLive = Array.from(
-          new Map(liveData.items.map(item => [item.itemId, item])).values()
-        ).slice(0, 4);
-        setLiveListings(uniqueLive);
-      } else {
+      // Fetch real live listings from eBay API
+      try {
+        const ebayResponse = await fetch('/api/ebay-live', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ query: trimmedQuery }).toString(),
+        });
+        const ebayData = await ebayResponse.json();
+        if (ebayData.success && ebayData.items) {
+          setLiveListings(ebayData.items);
+        } else {
+          setLiveListings([]);
+        }
+      } catch {
         setLiveListings([]);
       }
     } catch {
@@ -398,44 +406,41 @@ export default function Home() {
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {liveListings.map((item) => {
-                const ebayUrl = `https://www.ebay.com/itm/${item.itemId}?mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=5339137501&toolid=10001&mkevt=1`;
-                return (
-                  <a
-                    key={item.itemId}
-                    href={ebayUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-gray-900/80 border border-green-800/50 rounded-lg overflow-hidden hover:border-green-600 transition-colors group"
-                  >
-                    <div className="aspect-square bg-gray-800 relative overflow-hidden">
-                      {item.galleryURL ? (
-                        <img
-                          src={item.galleryURL.replace('s-l225', 's-l500')}
-                          alt={item.title}
-                          className="w-full h-full object-contain group-hover:scale-105 transition-transform"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-600">
-                          No Image
-                        </div>
-                      )}
-                      <div className="absolute top-2 left-2 px-2 py-1 rounded text-xs font-semibold bg-green-600 text-white">
-                        BUY NOW
+              {liveListings.map((item) => (
+                <a
+                  key={item.itemId}
+                  href={item.ebayUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-gray-900/80 border border-green-800/50 rounded-lg overflow-hidden hover:border-green-600 transition-colors group"
+                >
+                  <div className="aspect-square bg-gray-800 relative overflow-hidden">
+                    {item.galleryURL ? (
+                      <img
+                        src={item.galleryURL}
+                        alt={item.title}
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-600">
+                        No Image
                       </div>
+                    )}
+                    <div className="absolute top-2 left-2 px-2 py-1 rounded text-xs font-semibold bg-green-600 text-white">
+                      BUY NOW
                     </div>
-                    <div className="p-3">
-                      <h3 className="text-white text-xs font-medium line-clamp-2 mb-2 group-hover:text-green-400 transition-colors">
-                        {item.title}
-                      </h3>
-                      <span className="text-lg font-bold text-green-400">
-                        {formatPrice(item.currentPrice, item.currentPriceCurrency)}
-                      </span>
-                    </div>
-                  </a>
-                );
-              })}
+                  </div>
+                  <div className="p-3">
+                    <h3 className="text-white text-xs font-medium line-clamp-2 mb-2 group-hover:text-green-400 transition-colors">
+                      {item.title}
+                    </h3>
+                    <span className="text-lg font-bold text-green-400">
+                      {formatPrice(item.currentPrice, item.currentPriceCurrency)}
+                    </span>
+                  </div>
+                </a>
+              ))}
             </div>
           </div>
         </section>
