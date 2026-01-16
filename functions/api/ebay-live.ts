@@ -57,10 +57,12 @@ async function getEbayToken(clientId: string, clientSecret: string): Promise<str
 // Search eBay for live listings
 async function searchEbay(query: string, token: string, limit: number = 4): Promise<EbayItem[]> {
   try {
+    // Try exact phrase match by wrapping multi-word queries in quotes
+    const searchQuery = query.includes(' ') ? `"${query}"` : query;
     const params = new URLSearchParams({
-      q: query,
+      q: searchQuery,
       limit: String(limit),
-      filter: 'buyingOptions:{FIXED_PRICE|AUCTION},conditionIds:{1000|1500|2000|2500|3000|4000|5000|6000}',
+      filter: 'buyingOptions:{FIXED_PRICE|AUCTION}',
     });
 
     const response = await fetch(
