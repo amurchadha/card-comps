@@ -121,13 +121,22 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       });
     }
 
-    // Search for live listings (get more than 4 in case some lack prices)
-    const items = await searchEbay(query, token, 12);
+    // Search for live listings (get more since we filter aggressively)
+    const items = await searchEbay(query, token, 20);
+
+    // Filter to only items that match the search terms
+    const searchTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+    const filteredItems = items.filter(item => {
+      if (!item.price?.value) return false;
+      const title = item.title.toLowerCase();
+      // At least half the search terms must appear in the title
+      const matchCount = searchTerms.filter(term => title.includes(term)).length;
+      return matchCount >= Math.ceil(searchTerms.length / 2);
+    });
 
     // Transform to our format with affiliate links
     const campaignId = env.EBAY_CAMPAIGN_ID || '5339137501';
-    const transformedItems = items
-      .filter(item => item.price?.value) // Only items with valid prices
+    const transformedItems = filteredItems
       .slice(0, 4) // Take first 4
       .map(item => ({
         itemId: item.itemId.replace('v1|', '').split('|')[0],
