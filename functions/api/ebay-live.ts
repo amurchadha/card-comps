@@ -121,17 +121,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       });
     }
 
-    // Search for live listings (get more since we filter aggressively)
-    const items = await searchEbay(query, token, 20);
+    // Search for live listings
+    const items = await searchEbay(query, token, 50);
 
-    // Filter to only items that match the search terms
+    // Filter to only items that match at least one search term
     const searchTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
     const filteredItems = items.filter(item => {
       if (!item.price?.value) return false;
       const title = item.title.toLowerCase();
-      // At least half the search terms must appear in the title
-      const matchCount = searchTerms.filter(term => title.includes(term)).length;
-      return matchCount >= Math.ceil(searchTerms.length / 2);
+      // At least one search term must appear in the title
+      return searchTerms.some(term => title.includes(term));
     });
 
     // Transform to our format with affiliate links
