@@ -124,13 +124,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     // Search for live listings
     const items = await searchEbay(query, token, 50);
 
-    // Filter to only items that match at least one search term
+    // Filter to only items that actually match the search
     const searchTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
     const filteredItems = items.filter(item => {
       if (!item.price?.value) return false;
       const title = item.title.toLowerCase();
-      // At least one search term must appear in the title
-      return searchTerms.some(term => title.includes(term));
+      const matchCount = searchTerms.filter(term => title.includes(term)).length;
+      // Require at least 2 terms to match, or all if there's only 1-2 terms
+      const minRequired = searchTerms.length <= 2 ? searchTerms.length : 2;
+      return matchCount >= minRequired;
     });
 
     // Transform to our format with affiliate links
