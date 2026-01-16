@@ -140,31 +140,14 @@ export default function Home() {
     }
   }, [query, sortOrder]);
 
-  // Calculate price distribution
-  const priceDistribution = useMemo(() => {
+  // Calculate median price
+  const medianPrice = useMemo(() => {
     if (results.length === 0) return null;
-
     const prices = results.map(item => parsePrice(item.salePrice)).filter(p => p > 0).sort((a, b) => a - b);
     if (prices.length === 0) return null;
-
-    const median = prices.length % 2 === 0
+    return prices.length % 2 === 0
       ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2
       : prices[Math.floor(prices.length / 2)];
-
-    // Price ranges for histogram
-    const min = prices[0];
-    const max = prices[prices.length - 1];
-    const range = max - min;
-    const bucketSize = range / 5 || 1;
-
-    const buckets = Array(5).fill(0);
-    prices.forEach(p => {
-      const idx = Math.min(Math.floor((p - min) / bucketSize), 4);
-      buckets[idx]++;
-    });
-    const maxBucket = Math.max(...buckets);
-
-    return { median, min, max, buckets, bucketSize, maxBucket };
   }, [results]);
 
   // Calculate overall stats
@@ -365,13 +348,10 @@ export default function Home() {
       )}
 
       {/* Price Stats */}
-      {stats && priceDistribution && (
+      {stats && (
         <section className="bg-gray-900/30 border-b border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 py-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Price Analysis</h2>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-gray-800/50 rounded-lg p-4">
                 <div className="text-gray-400 text-sm">Results</div>
                 <div className="text-2xl font-bold text-white">{stats.count}</div>
@@ -382,32 +362,12 @@ export default function Home() {
               </div>
               <div className="bg-gray-800/50 rounded-lg p-4">
                 <div className="text-gray-400 text-sm">Median</div>
-                <div className="text-2xl font-bold text-blue-400">{formatPrice(priceDistribution.median)}</div>
+                <div className="text-2xl font-bold text-blue-400">{medianPrice ? formatPrice(medianPrice) : '-'}</div>
               </div>
               <div className="bg-gray-800/50 rounded-lg p-4">
                 <div className="text-gray-400 text-sm">Range</div>
                 <div className="text-lg font-bold text-white">{formatPrice(stats.min)} - {formatPrice(stats.max)}</div>
               </div>
-            </div>
-
-            {/* Price Distribution */}
-            <div className="text-gray-400 text-sm mb-2">Price Distribution</div>
-            <div className="flex items-end gap-1 h-16">
-              {priceDistribution.buckets.map((count, idx) => {
-                const height = priceDistribution.maxBucket > 0 ? (count / priceDistribution.maxBucket) * 100 : 0;
-                const rangeStart = priceDistribution.min + (idx * priceDistribution.bucketSize);
-                const rangeEnd = rangeStart + priceDistribution.bucketSize;
-                return (
-                  <div key={idx} className="flex-1 flex flex-col items-center gap-1">
-                    <div
-                      className="w-full bg-green-500/70 rounded-t transition-all"
-                      style={{ height: `${Math.max(height, 4)}%` }}
-                      title={`${formatPrice(rangeStart)} - ${formatPrice(rangeEnd)}: ${count} sales`}
-                    />
-                    <span className="text-xs text-gray-500">{formatPrice(rangeStart)}</span>
-                  </div>
-                );
-              })}
             </div>
           </div>
         </section>
