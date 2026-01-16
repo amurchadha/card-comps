@@ -60,8 +60,7 @@ async function searchEbay(query: string, token: string, limit: number = 4): Prom
     const params = new URLSearchParams({
       q: query,
       limit: String(limit),
-      sort: 'newlyListed',
-      filter: 'buyingOptions:{FIXED_PRICE|AUCTION}',
+      filter: 'buyingOptions:{FIXED_PRICE|AUCTION},conditionIds:{1000|1500|2000|2500|3000|4000|5000|6000}',
     });
 
     const response = await fetch(
@@ -121,8 +120,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       });
     }
 
-    // Search for live listings
-    const items = await searchEbay(query, token, 50);
+    // Search for live listings - get lots since eBay returns irrelevant results
+    const items = await searchEbay(query, token, 100);
 
     // Filter to only items that actually match the search
     const searchTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
