@@ -44,6 +44,7 @@ export default function Home() {
   const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOption>('date_desc');
+  const [expandedAnalysis, setExpandedAnalysis] = useState<Set<string>>(new Set());
 
   // Parse price safely
   const parsePrice = (price: string | undefined | null): number => {
@@ -166,6 +167,132 @@ export default function Home() {
       max: Math.max(...prices),
     };
   }, [results]);
+
+  // Toggle analysis section
+  const toggleAnalysis = (section: string) => {
+    setExpandedAnalysis(prev => {
+      const next = new Set(prev);
+      if (next.has(section)) {
+        next.delete(section);
+      } else {
+        next.add(section);
+      }
+      return next;
+    });
+  };
+
+  // Sale type breakdown
+  const saleTypeBreakdown = useMemo(() => {
+    if (results.length === 0) return null;
+    const breakdown = { auction: 0, bin: 0, bestOffer: 0 };
+    results.forEach(item => {
+      if (item.saleType === 'auction' && parseInt(item.bids) > 0) {
+        breakdown.auction++;
+      } else if (item.saleType === 'bestoffer') {
+        breakdown.bestOffer++;
+      } else {
+        breakdown.bin++;
+      }
+    });
+    const total = results.length;
+    return {
+      auction: { count: breakdown.auction, pct: Math.round((breakdown.auction / total) * 100) },
+      bin: { count: breakdown.bin, pct: Math.round((breakdown.bin / total) * 100) },
+      bestOffer: { count: breakdown.bestOffer, pct: Math.round((breakdown.bestOffer / total) * 100) },
+    };
+  }, [results]);
+
+  // Grade price comparison
+  const gradeAnalysis = useMemo(() => {
+    if (results.length === 0) return null;
+    const grades: Record<string, number[]> = {
+      'PSA 10': [], 'PSA 9': [], 'PSA 8': [],
+      'BGS 9.5': [], 'BGS 9': [],
+      'SGC 10': [], 'SGC 9': [],
+      'CGC 10': [], 'CGC 9': [],
+      'Raw': []
+    };
+
+    results.forEach(item => {
+      const title = item.title.toUpperCase();
+      const price = parsePrice(item.salePrice);
+      if (price <= 0) return;
+
+      if (title.includes('PSA 10') || title.includes('PSA10')) grades['PSA 10'].push(price);
+      else if (title.includes('PSA 9') || title.includes('PSA9')) grades['PSA 9'].push(price);
+      else if (title.includes('PSA 8') || title.includes('PSA8')) grades['PSA 8'].push(price);
+      else if (title.includes('BGS 9.5') || title.includes('BGS9.5')) grades['BGS 9.5'].push(price);
+      else if (title.includes('BGS 9') || title.includes('BGS9')) grades['BGS 9'].push(price);
+      else if (title.includes('SGC 10') || title.includes('SGC10')) grades['SGC 10'].push(price);
+      else if (title.includes('SGC 9') || title.includes('SGC9')) grades['SGC 9'].push(price);
+      else if (title.includes('CGC 10') || title.includes('CGC10')) grades['CGC 10'].push(price);
+      else if (title.includes('CGC 9') || title.includes('CGC9')) grades['CGC 9'].push(price);
+      else if (!title.includes('PSA') && !title.includes('BGS') && !title.includes('SGC') && !title.includes('CGC')) {
+        grades['Raw'].push(price);
+      }
+    });
+
+    return Object.entries(grades)
+      .filter(([, prices]) => prices.length > 0)
+      .map(([grade, prices]) => ({
+        grade,
+        count: prices.length,
+        avg: prices.reduce((a, b) => a + b, 0) / prices.length,
+        min: Math.min(...prices),
+        max: Math.max(...prices),
+      }))
+      .sort((a, b) => b.avg - a.avg);
+  }, [results]);
+
+  // Price confidence
+  const priceConfidence = useMemo(() => {
+    if (results.length === 0) return null;
+    const count = results.length;
+    if (count >= 100) return { level: 'High', color: 'text-green-400', desc: `${count} sales - very reliable` };
+    if (count >= 50) return { level: 'Good', color: 'text-blue-400', desc: `${count} sales - reliable` };
+    if (count >= 20) return { level: 'Moderate', color: 'text-yellow-400', desc: `${count} sales - fairly reliable` };
+    if (count >= 5) return { level: 'Low', color: 'text-orange-400', desc: `${count} sales - limited data` };
+    return { level: 'Very Low', color: 'text-red-400', desc: `${count} sales - insufficient data` };
+  }, [results]);
+
+  // Outlier detection
+  const outlierAnalysis = useMemo(() => {
+    if (results.length < 5 || !medianPrice) return null;
+    const prices = results.map(item => parsePrice(item.salePrice)).filter(p => p > 0).sort((a, b) => a - b);
+
+    // IQR method
+    const q1 = prices[Math.floor(prices.length * 0.25)];
+    const q3 = prices[Math.floor(prices.length * 0.75)];
+    const iqr = q3 - q1;
+    const lowerBound = q1 - (iqr * 1.5);
+    const upperBound = q3 + (iqr * 1.5);
+
+    const outliers = results.filter(item => {
+      const price = parsePrice(item.salePrice);
+      return price < lowerBound || price > upperBound;
+    });
+
+    return {
+      count: outliers.length,
+      lowerBound: Math.max(0, lowerBound),
+      upperBound,
+      outliers: outliers.slice(0, 5), // Show first 5
+    };
+  }, [results, medianPrice]);
+
+  // Deals analysis
+  const dealsAnalysis = useMemo(() => {
+    if (results.length === 0 || !medianPrice) return null;
+    const belowMedian = results.filter(item => parsePrice(item.salePrice) < medianPrice);
+    const aboveMedian = results.filter(item => parsePrice(item.salePrice) > medianPrice);
+    const greatDeals = results.filter(item => parsePrice(item.salePrice) < medianPrice * 0.7);
+    return {
+      belowMedian: belowMedian.length,
+      aboveMedian: aboveMedian.length,
+      greatDeals: greatDeals.length,
+      greatDealsList: greatDeals.slice(0, 5),
+    };
+  }, [results, medianPrice]);
 
   const formatPrice = (price: string | number, currency?: string) => {
     const num = typeof price === 'string' ? parseFloat(price) : price;
@@ -369,6 +496,198 @@ export default function Home() {
                 <div className="text-lg font-bold text-white">{formatPrice(stats.min)} - {formatPrice(stats.max)}</div>
               </div>
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* Advanced Analysis */}
+      {stats && (
+        <section className="bg-gray-900/50 border-b border-gray-700">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex flex-wrap gap-2 mb-4">
+              <button
+                onClick={() => toggleAnalysis('deals')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  expandedAnalysis.has('deals') ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                💰 Deals {dealsAnalysis && `(${dealsAnalysis.greatDeals})`}
+              </button>
+              <button
+                onClick={() => toggleAnalysis('saleType')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  expandedAnalysis.has('saleType') ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                📊 Sale Types
+              </button>
+              <button
+                onClick={() => toggleAnalysis('grades')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  expandedAnalysis.has('grades') ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                🏆 Grade Prices
+              </button>
+              <button
+                onClick={() => toggleAnalysis('confidence')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  expandedAnalysis.has('confidence') ? 'bg-yellow-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                📈 Confidence
+              </button>
+              <button
+                onClick={() => toggleAnalysis('outliers')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  expandedAnalysis.has('outliers') ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                ⚠️ Outliers {outlierAnalysis && `(${outlierAnalysis.count})`}
+              </button>
+            </div>
+
+            {/* Deals Panel */}
+            {expandedAnalysis.has('deals') && dealsAnalysis && (
+              <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
+                <h3 className="text-white font-semibold mb-3">Deal Finder</h3>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-400">{dealsAnalysis.greatDeals}</div>
+                    <div className="text-gray-400 text-sm">Great Deals (&lt;70% median)</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-400">{dealsAnalysis.belowMedian}</div>
+                    <div className="text-gray-400 text-sm">Below Median</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-400">{dealsAnalysis.aboveMedian}</div>
+                    <div className="text-gray-400 text-sm">Above Median</div>
+                  </div>
+                </div>
+                {dealsAnalysis.greatDealsList.length > 0 && (
+                  <div>
+                    <div className="text-gray-400 text-sm mb-2">Best deals found:</div>
+                    <div className="space-y-1">
+                      {dealsAnalysis.greatDealsList.map(item => (
+                        <div key={item.itemId} className="flex justify-between text-sm">
+                          <span className="text-gray-300 truncate flex-1 mr-2">{item.title}</span>
+                          <span className="text-green-400 font-semibold">{formatPrice(item.salePrice)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Sale Type Panel */}
+            {expandedAnalysis.has('saleType') && saleTypeBreakdown && (
+              <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
+                <h3 className="text-white font-semibold mb-3">How This Card Sells</h3>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-blue-400">Buy It Now</span>
+                      <span className="text-gray-300">{saleTypeBreakdown.bin.count} ({saleTypeBreakdown.bin.pct}%)</span>
+                    </div>
+                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-500" style={{ width: `${saleTypeBreakdown.bin.pct}%` }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-orange-400">Auction</span>
+                      <span className="text-gray-300">{saleTypeBreakdown.auction.count} ({saleTypeBreakdown.auction.pct}%)</span>
+                    </div>
+                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-orange-500" style={{ width: `${saleTypeBreakdown.auction.pct}%` }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-green-400">Best Offer</span>
+                      <span className="text-gray-300">{saleTypeBreakdown.bestOffer.count} ({saleTypeBreakdown.bestOffer.pct}%)</span>
+                    </div>
+                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500" style={{ width: `${saleTypeBreakdown.bestOffer.pct}%` }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Grade Prices Panel */}
+            {expandedAnalysis.has('grades') && gradeAnalysis && gradeAnalysis.length > 0 && (
+              <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
+                <h3 className="text-white font-semibold mb-3">Price by Grade</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-gray-400 border-b border-gray-700">
+                        <th className="text-left py-2">Grade</th>
+                        <th className="text-right py-2">Count</th>
+                        <th className="text-right py-2">Avg</th>
+                        <th className="text-right py-2">Range</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {gradeAnalysis.map(g => (
+                        <tr key={g.grade} className="border-b border-gray-700/50">
+                          <td className="py-2 text-white font-medium">{g.grade}</td>
+                          <td className="py-2 text-right text-gray-300">{g.count}</td>
+                          <td className="py-2 text-right text-green-400 font-semibold">{formatPrice(g.avg)}</td>
+                          <td className="py-2 text-right text-gray-400">{formatPrice(g.min)} - {formatPrice(g.max)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Confidence Panel */}
+            {expandedAnalysis.has('confidence') && priceConfidence && (
+              <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
+                <h3 className="text-white font-semibold mb-3">Price Confidence</h3>
+                <div className="flex items-center gap-4">
+                  <div className={`text-3xl font-bold ${priceConfidence.color}`}>
+                    {priceConfidence.level}
+                  </div>
+                  <div className="text-gray-400">{priceConfidence.desc}</div>
+                </div>
+                <p className="text-gray-500 text-sm mt-3">
+                  More sales = more reliable pricing data. 100+ sales is considered highly reliable.
+                </p>
+              </div>
+            )}
+
+            {/* Outliers Panel */}
+            {expandedAnalysis.has('outliers') && outlierAnalysis && (
+              <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
+                <h3 className="text-white font-semibold mb-3">Outlier Detection</h3>
+                <div className="text-gray-300 mb-3">
+                  Found <span className="text-red-400 font-bold">{outlierAnalysis.count}</span> potential outliers
+                  outside the normal range of {formatPrice(outlierAnalysis.lowerBound)} - {formatPrice(outlierAnalysis.upperBound)}
+                </div>
+                {outlierAnalysis.outliers.length > 0 && (
+                  <div>
+                    <div className="text-gray-400 text-sm mb-2">Suspicious prices:</div>
+                    <div className="space-y-1">
+                      {outlierAnalysis.outliers.map(item => (
+                        <div key={item.itemId} className="flex justify-between text-sm">
+                          <span className="text-gray-300 truncate flex-1 mr-2">{item.title}</span>
+                          <span className="text-red-400 font-semibold">{formatPrice(item.salePrice)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <p className="text-gray-500 text-sm mt-3">
+                  Outliers may be errors, different card variations, or genuinely unusual sales.
+                </p>
+              </div>
+            )}
           </div>
         </section>
       )}
