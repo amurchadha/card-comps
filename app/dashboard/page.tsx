@@ -1,8 +1,9 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { useApi } from '@/lib/api-client';
 
 // Dynamic import to avoid SSR issues with Clerk
 const AppNav = dynamic(() => import('@/components/app-nav').then(m => m.AppNav), { ssr: false });
@@ -29,6 +30,7 @@ type Platform = keyof typeof PLATFORM_FEES;
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const api = useApi();
 
   // Profit Calculator state
   const [showCalculator, setShowCalculator] = useState(false);
@@ -40,15 +42,21 @@ export default function DashboardPage() {
   const [purchaseTax, setPurchaseTax] = useState<string>('');
   const [purchaseShipping, setPurchaseShipping] = useState<string>('');
 
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await api.get('/api/stats');
+      const data = await res.json();
+      if (!data.error) setStats(data);
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [api]);
+
   useEffect(() => {
-    fetch('/api/stats')
-      .then(res => res.json())
-      .then(data => {
-        if (!data.error) setStats(data);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+    fetchStats();
+  }, [fetchStats]);
 
   // Calculator logic
   const calculations = useMemo(() => {

@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useApi } from '@/lib/api-client';
 
 // Dynamic import to avoid SSR issues with Clerk
 const AppNav = dynamic(() => import('@/components/app-nav').then(m => m.AppNav), { ssr: false });
@@ -26,6 +27,7 @@ export default function GoalsPage() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const api = useApi();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -41,7 +43,7 @@ export default function GoalsPage() {
 
   const fetchGoals = useCallback(async () => {
     try {
-      const res = await fetch('/api/goals');
+      const res = await api.get('/api/goals');
       const data = await res.json();
       setGoals(data.goals || []);
     } catch (error) {
@@ -49,7 +51,7 @@ export default function GoalsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [api]);
 
   useEffect(() => {
     fetchGoals();
@@ -73,15 +75,11 @@ export default function GoalsPage() {
 
     try {
       if (editingGoal) {
-        const res = await fetch('/api/goals', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: editingGoal.id,
-            ...formData,
-            target_price: parseFloat(formData.target_price) || 0,
-            current_funding: parseFloat(formData.current_funding) || 0,
-          }),
+        const res = await api.patch('/api/goals', {
+          id: editingGoal.id,
+          ...formData,
+          target_price: parseFloat(formData.target_price) || 0,
+          current_funding: parseFloat(formData.current_funding) || 0,
         });
         if (res.ok) {
           fetchGoals();
@@ -90,11 +88,7 @@ export default function GoalsPage() {
           resetForm();
         }
       } else {
-        const res = await fetch('/api/goals', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
-        });
+        const res = await api.post('/api/goals', formData);
         if (res.ok) {
           fetchGoals();
           setShowAddModal(false);
@@ -110,7 +104,7 @@ export default function GoalsPage() {
     if (!confirm('Delete this goal?')) return;
 
     try {
-      const res = await fetch(`/api/goals?id=${id}`, { method: 'DELETE' });
+      const res = await api.delete(`/api/goals?id=${id}`);
       if (res.ok) {
         fetchGoals();
       }
@@ -122,15 +116,11 @@ export default function GoalsPage() {
   const handleAddFunding = async (goal: Goal, amount: number) => {
     try {
       const newFunding = (goal.current_funding || 0) + amount;
-      const res = await fetch('/api/goals', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: goal.id,
-          current_funding: newFunding,
-          target_price: goal.target_price,
-          status: goal.status,
-        }),
+      const res = await api.patch('/api/goals', {
+        id: goal.id,
+        current_funding: newFunding,
+        target_price: goal.target_price,
+        status: goal.status,
       });
       if (res.ok) {
         fetchGoals();

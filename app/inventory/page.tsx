@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useCallback } from 'react';
+import { useApi } from '@/lib/api-client';
 
 // Dynamic import to avoid SSR issues with Clerk
 const AppNav = dynamic(() => import('@/components/app-nav').then(m => m.AppNav), { ssr: false });
@@ -34,6 +35,7 @@ export default function InventoryPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const api = useApi();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -53,7 +55,7 @@ export default function InventoryPage() {
 
   const fetchInventory = useCallback(async () => {
     try {
-      const res = await fetch('/api/inventory');
+      const res = await api.get('/api/inventory');
       const data = await res.json();
       setItems(data.items || []);
     } catch (error) {
@@ -61,7 +63,7 @@ export default function InventoryPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [api]);
 
   useEffect(() => {
     fetchInventory();
@@ -96,11 +98,7 @@ export default function InventoryPage() {
 
     try {
       if (editingItem) {
-        const res = await fetch('/api/inventory', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingItem.id, ...payload }),
-        });
+        const res = await api.patch('/api/inventory', { id: editingItem.id, ...payload });
         if (res.ok) {
           fetchInventory();
           setEditingItem(null);
@@ -108,11 +106,7 @@ export default function InventoryPage() {
           resetForm();
         }
       } else {
-        const res = await fetch('/api/inventory', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+        const res = await api.post('/api/inventory', payload);
         if (res.ok) {
           fetchInventory();
           setShowAddModal(false);
@@ -128,7 +122,7 @@ export default function InventoryPage() {
     if (!confirm('Delete this card from inventory?')) return;
 
     try {
-      const res = await fetch(`/api/inventory?id=${id}`, { method: 'DELETE' });
+      const res = await api.delete(`/api/inventory?id=${id}`);
       if (res.ok) {
         fetchInventory();
       }

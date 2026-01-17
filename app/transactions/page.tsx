@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useApi } from '@/lib/api-client';
 
 // Dynamic import to avoid SSR issues with Clerk
 const AppNav = dynamic(() => import('@/components/app-nav').then(m => m.AppNav), { ssr: false });
@@ -58,6 +59,7 @@ export default function TransactionsPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const api = useApi();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -75,8 +77,8 @@ export default function TransactionsPage() {
   const fetchData = useCallback(async () => {
     try {
       const [transRes, invRes] = await Promise.all([
-        fetch('/api/transactions'),
-        fetch('/api/inventory'),
+        api.get('/api/transactions'),
+        api.get('/api/inventory'),
       ]);
       const transData = await transRes.json();
       const invData = await invRes.json();
@@ -87,7 +89,7 @@ export default function TransactionsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [api]);
 
   useEffect(() => {
     fetchData();
@@ -140,14 +142,10 @@ export default function TransactionsPage() {
     e.preventDefault();
 
     try {
-      const res = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          type: 'sale',
-          platform_fee_pct: PLATFORMS[formData.platform].fee,
-        }),
+      const res = await api.post('/api/transactions', {
+        ...formData,
+        type: 'sale',
+        platform_fee_pct: PLATFORMS[formData.platform].fee,
       });
 
       if (res.ok) {
@@ -164,7 +162,7 @@ export default function TransactionsPage() {
     if (!confirm('Delete this transaction?')) return;
 
     try {
-      const res = await fetch(`/api/transactions?id=${id}`, { method: 'DELETE' });
+      const res = await api.delete(`/api/transactions?id=${id}`);
       if (res.ok) {
         fetchData();
       }
