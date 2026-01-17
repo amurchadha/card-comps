@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
-import { AuthProvider } from '@/components/auth-provider';
 
 export const metadata: Metadata = {
   title: 'Card Comps - Sports Card Sales Search',
@@ -30,9 +29,7 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="min-h-screen bg-gray-950 antialiased">
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        {children}
       </body>
     </html>
   );
