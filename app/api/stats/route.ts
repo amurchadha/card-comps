@@ -1,13 +1,19 @@
-import { auth } from '@clerk/nextjs/server';
 import { createServerSupabase } from '@/lib/supabase';
+import { getClerkUserId } from '@/lib/auth-helper';
 import { NextResponse } from 'next/server';
 
 // GET - Get user's aggregated stats
 export async function GET() {
   try {
-    const { userId } = await auth();
+    const userId = await getClerkUserId();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      // Return empty stats for unauthenticated users
+      return NextResponse.json({
+        inventory: { count: 0, totalCost: 0 },
+        transactions: { count: 0, totalRevenue: 0, totalProfit: 0, avgRoi: 0 },
+        goals: { active: 0, achieved: 0, totalTarget: 0, totalFunded: 0 },
+        recentActivity: [],
+      });
     }
 
     const supabase = createServerSupabase();

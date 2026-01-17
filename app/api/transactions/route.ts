@@ -1,13 +1,13 @@
-import { auth } from '@clerk/nextjs/server';
 import { createServerSupabase } from '@/lib/supabase';
+import { getClerkUserId } from '@/lib/auth-helper';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET - List user's transactions
 export async function GET() {
   try {
-    const { userId } = await auth();
+    const userId = await getClerkUserId();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ transactions: [] });
     }
 
     const supabase = createServerSupabase();
@@ -50,9 +50,9 @@ export async function GET() {
 // POST - Add new transaction (sale)
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userId = await getClerkUserId();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -131,9 +131,9 @@ export async function POST(request: NextRequest) {
 // DELETE - Remove transaction
 export async function DELETE(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userId = await getClerkUserId();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
