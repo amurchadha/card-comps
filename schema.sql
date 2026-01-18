@@ -14,12 +14,18 @@ CREATE TABLE IF NOT EXISTS sales (
   image_url TEXT,
   sale_date TEXT NOT NULL,
   shipping_cost REAL DEFAULT 0,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  -- Link to Supabase card_catalog
+  catalog_id TEXT, -- UUID from Supabase card_catalog.id
+  set_id TEXT,     -- UUID from Supabase card_sets.id
+  matched_at TEXT  -- When the match was made
 );
 
 -- Index for fast lookups
 CREATE INDEX IF NOT EXISTS idx_item_id ON sales(item_id);
 CREATE INDEX IF NOT EXISTS idx_sale_date ON sales(sale_date DESC);
+CREATE INDEX IF NOT EXISTS idx_catalog_id ON sales(catalog_id);
+CREATE INDEX IF NOT EXISTS idx_set_id ON sales(set_id);
 
 -- Search cache table - tracks what queries we've already fetched
 CREATE TABLE IF NOT EXISTS search_cache (

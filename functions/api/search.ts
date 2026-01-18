@@ -1,6 +1,8 @@
 interface Env {
   DB: D1Database;
   RELAY_API_KEY: string;
+  SUPABASE_URL: string;
+  SUPABASE_SERVICE_KEY: string;
 }
 
 interface SaleItem {
@@ -20,6 +22,61 @@ interface SaleItem {
 }
 
 const RELAY_URL = 'https://relay.steepforce.com';
+
+interface CatalogMatch {
+  catalog_id: string;
+  set_id: string;
+}
+
+// Extract potential player name from eBay title
+function extractPlayerName(title: string): string | null {
+  // Common patterns: "2023 Prizm Lionel Messi #123" or "Lionel Messi 2023 Prizm"
+  const cleaned = title
+    .replace(/psa|bgs|sgc|cgc|\d+\/\d+|#\d+|\d{4}(-\d{2})?/gi, '')
+    .replace(/prizm|select|mosaic|optic|chrome|topps|panini|donruss|bowman/gi, '')
+    .replace(/auto|autograph|rc|rookie|refractor|parallel|base|insert/gi, '')
+    .replace(/[^\w\s'-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Look for 2-3 word name patterns (First Last or First Middle Last)
+  const nameMatch = cleaned.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})\b/);
+  return nameMatch ? nameMatch[1] : null;
+}
+
+// Query Supabase for catalog match
+async function findCatalogMatch(
+  title: string,
+  env: Env
+): Promise<CatalogMatch | null> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return null;
+
+  const playerName = extractPlayerName(title);
+  if (!playerName) return null;
+
+  try {
+    const response = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/card_catalog?player_name=ilike.*${encodeURIComponent(playerName)}*&select=id,set_id&limit=1`,
+      {
+        headers: {
+          'apikey': env.SUPABASE_SERVICE_KEY,
+          'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+        },
+      }
+    );
+
+    if (!response.ok) return null;
+
+    const results = await response.json() as Array<{ id: string; set_id: string }>;
+    if (results.length > 0) {
+      return { catalog_id: results[0].id, set_id: results[0].set_id };
+    }
+  } catch {
+    // Silently fail - matching is best-effort
+  }
+
+  return null;
+}
 
 // Check if cache is fresh (less than 6 hours old)
 function isCacheFresh(lastFetched: string): boolean {
@@ -85,8 +142,8 @@ function filterRelevantItems(items: SaleItem[], query: string): SaleItem[] {
   });
 }
 
-// Store items in D1
-async function storeItems(items: SaleItem[], query: string, searchType: string, db: D1Database): Promise<void> {
+// Store items in D1 with catalog linking
+async function storeItems(items: SaleItem[], query: string, searchType: string, db: D1Database, env: Env): Promise<void> {
   // Filter to only relevant items before storing
   const relevantItems = filterRelevantItems(items, query);
 
@@ -100,15 +157,19 @@ async function storeItems(items: SaleItem[], query: string, searchType: string, 
         result_count = ?
     `).bind(query.toLowerCase(), searchType, relevantItems.length, relevantItems.length).run();
 
-    // Insert items (ignore duplicates)
+    // Insert items with catalog matching
     for (const item of relevantItems) {
+      // Try to match against card catalog
+      const match = await findCatalogMatch(item.title, env);
+
       await db.prepare(`
         INSERT OR IGNORE INTO sales (
           item_id, title, sale_price, sale_price_currency,
           current_price, current_price_currency,
           best_offer_price, best_offer_currency,
-          sale_type, bids, image_url, sale_date, shipping_cost
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          sale_type, bids, image_url, sale_date, shipping_cost,
+          catalog_id, set_id, matched_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         item.itemId,
         item.title,
@@ -122,7 +183,10 @@ async function storeItems(items: SaleItem[], query: string, searchType: string, 
         parseInt(item.bids) || 0,
         item.galleryURL,
         item.endTime,
-        parseFloat(item.shippingServiceCost) || 0
+        parseFloat(item.shippingServiceCost) || 0,
+        match?.catalog_id || null,
+        match?.set_id || null,
+        match ? new Date().toISOString() : null
       ).run();
     }
   } catch (error) {
@@ -218,8 +282,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       // Filter to relevant items only
       const filteredItems = filterRelevantItems(relayResult.items, query);
 
-      // Store in cache (don't await)
-      context.waitUntil(storeItems(relayResult.items, query, searchType, env.DB));
+      // Store in cache with catalog linking (don't await)
+      context.waitUntil(storeItems(relayResult.items, query, searchType, env.DB, env));
 
       return new Response(JSON.stringify({
         success: true,
