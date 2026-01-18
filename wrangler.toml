@@ -8,3 +8,8 @@ compatibility_flags = ["nodejs_compat"]
 binding = "DB"
 database_name = "cards-comp-db"
 database_id = "54505640-37c0-4741-b5ab-dac873c476f8"
+
+[vars]
+SUPABASE_URL = "https://ghdqbnjsfhjgyqlktfud.supabase.co"
+NEXT_PUBLIC_SUPABASE_URL = "https://ghdqbnjsfhjgyqlktfud.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHFibmpzZmhqZ3lxbGt0ZnVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2MTA5NDcsImV4cCI6MjA4NDE4Njk0N30.8Iws7In9ZrvNPL9fCAgSxdBjNFzi88moQWD4qR7E5Yk"
