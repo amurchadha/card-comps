@@ -12,6 +12,13 @@ interface LabTool {
 
 const tools: LabTool[] = [
   {
+    title: 'Should I Grade This?',
+    description: 'Calculate ROI before grading. Enter your costs, compare PSA/BGS/SGC scenarios, and see if grading makes financial sense.',
+    href: '/labs/grade-calc',
+    status: 'beta',
+    icon: '🎯',
+  },
+  {
     title: 'Fee Calculator',
     description: 'Calculate your take-home after platform fees. Supports eBay, Whatnot, Mercari, COMC, MySlabs, and custom fees.',
     href: '/labs/fee-calc',
