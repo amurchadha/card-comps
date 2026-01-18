@@ -67,8 +67,9 @@ export async function GET(request: NextRequest) {
         .replace(/\s*Checklist\s*/gi, '')
         .trim();
 
-      // Don't duplicate year if it's already in the set name
-      const displayName = cleanName.startsWith(setData.year)
+      // Don't duplicate year if name already starts with a year pattern (e.g., "2025" or "2025-26")
+      const startsWithYear = /^\d{4}(-\d{2})?/.test(cleanName);
+      const displayName = startsWithYear
         ? cleanName
         : `${setData.year} ${cleanName}`;
 
