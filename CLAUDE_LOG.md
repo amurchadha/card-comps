@@ -13,10 +13,16 @@
 - [x] Grade Calculator UI at `/labs/grade-calc`
 - [x] API routes: `/api/grading-presets`, `/api/grade-comps`
 - [x] Rainbow Tracker fixes (query by player+set, strip "Checklist" from names)
+- [x] Fixed year duplication in rainbow search (regex for year pattern)
+- [x] Inventory UI updated with ROI tracking:
+  - Status tabs (Raw, Submitted, In Grading, Graded, Listed, Sold)
+  - Grading costs section (fee, supplies, shipping)
+  - Sale tracking (price, platform, fees, dates)
+  - Profit/ROI display on sold cards
+  - Total profit in stats
 
 ## Pending Work
-- [ ] Update inventory UI for new ROI fields (card_status, grading costs, sale tracking)
-- [ ] 130point scraper still running in background
+- [ ] (none currently)
 
 ## Migration Status
 | Migration | Status |

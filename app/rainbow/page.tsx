@@ -13,6 +13,7 @@ interface Parallel {
   subset_name: string;
   is_autograph: boolean;
   owned: boolean;
+  print_run?: number;
   inventory_id?: string;
   purchase_price?: number;
   grade?: string;
@@ -53,22 +54,15 @@ function getParallelColor(name: string): string {
   return 'bg-gray-700'; // Base
 }
 
-function getParallelNumbering(name: string): string {
-  const lower = name.toLowerCase();
-  if (lower.includes('superfractor') || lower.includes('1/1')) return '1/1';
-  if (lower.includes('red')) return '/5';
-  if (lower.includes('orange')) return '/10';
-  if (lower.includes('gold')) return '/25';
-  if (lower.includes('green')) return '/50';
-  if (lower.includes('pink')) return '/75';
-  if (lower.includes('blue')) return '/99';
-  if (lower.includes('purple')) return '/199';
-  return ''; // Base - no numbering
+function getParallelNumbering(printRun?: number): string {
+  if (!printRun) return '';
+  if (printRun === 1) return '1/1';
+  return `/${printRun}`;
 }
 
 function ParallelTile({ parallel, onToggleOwned, isSignedIn }: { parallel: Parallel; onToggleOwned: (id: string, owned: boolean) => void; isSignedIn: boolean }) {
   const color = getParallelColor(parallel.subset_name);
-  const numbering = getParallelNumbering(parallel.subset_name);
+  const numbering = getParallelNumbering(parallel.print_run);
   const displayName = parallel.subset_name.replace('Autographs - ', '');
 
   return (

@@ -15,6 +15,7 @@ interface ParallelData {
   subset_name: string;
   is_autograph: boolean;
   owned: boolean;
+  print_run?: number;
   inventory_id?: string;
   purchase_price?: number;
   grade?: string;
@@ -60,6 +61,7 @@ export async function GET(request: NextRequest) {
         subset_name,
         is_autograph,
         parallel_name,
+        print_run,
         card_sets (
           id,
           name,
@@ -152,6 +154,7 @@ export async function GET(request: NextRequest) {
         subset_name: card.subset_name || card.parallel_name || 'Base',
         is_autograph: card.is_autograph || false,
         owned: !!owned,
+        print_run: card.print_run,
         inventory_id: owned?.inventory_id,
         purchase_price: owned?.purchase_price,
         grade: owned?.grade,
