@@ -42,8 +42,8 @@ const tools: LabTool[] = [
   {
     title: 'Rainbow Tracker',
     description: 'Track your parallel rainbow progress for any card. From base to superfractor.',
-    href: '/labs/rainbow',
-    status: 'coming-soon',
+    href: '/rainbow',
+    status: 'live',
     icon: '🌈',
   },
   {
