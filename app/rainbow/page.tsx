@@ -17,11 +17,8 @@ interface Parallel {
   purchase_price?: number;
   grade?: string;
   grading_company?: string;
-  // Pricing data
   last_sale_price?: number;
   last_sale_date?: string;
-  avg_price?: number;
-  listings_count?: number;
 }
 
 interface SetInfo {
@@ -33,7 +30,6 @@ interface SetInfo {
 
 interface RainbowData {
   player_name: string;
-  card_number: string;
   set: SetInfo;
   base_parallels: Parallel[];
   auto_parallels: Parallel[];
@@ -42,12 +38,6 @@ interface RainbowData {
     auto: { owned: number; total: number };
   };
 }
-
-// Parallel rarity order (most common to rarest)
-const PARALLEL_ORDER = [
-  'Base', 'Purple', 'Blue', 'Pink', 'Green', 'Gold', 'Orange', 'Red',
-  'Black', 'Superfractor', '1/1'
-];
 
 function getParallelColor(name: string): string {
   const lower = name.toLowerCase();
@@ -76,15 +66,7 @@ function getParallelNumbering(name: string): string {
   return ''; // Base - no numbering
 }
 
-function sortParallels(parallels: Parallel[]): Parallel[] {
-  return [...parallels].sort((a, b) => {
-    const aIndex = PARALLEL_ORDER.findIndex(p => a.subset_name.toLowerCase().includes(p.toLowerCase()));
-    const bIndex = PARALLEL_ORDER.findIndex(p => b.subset_name.toLowerCase().includes(p.toLowerCase()));
-    return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
-  });
-}
-
-function ParallelTile({ parallel, onToggleOwned }: { parallel: Parallel; onToggleOwned: (id: string, owned: boolean) => void }) {
+function ParallelTile({ parallel, onToggleOwned, isSignedIn }: { parallel: Parallel; onToggleOwned: (id: string, owned: boolean) => void; isSignedIn: boolean }) {
   const color = getParallelColor(parallel.subset_name);
   const numbering = getParallelNumbering(parallel.subset_name);
   const displayName = parallel.subset_name.replace('Autographs - ', '');
@@ -105,6 +87,11 @@ function ParallelTile({ parallel, onToggleOwned }: { parallel: Parallel; onToggl
             {numbering}
           </div>
         )}
+
+        {/* Card Number Badge */}
+        <div className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded text-xs text-white">
+          #{parallel.card_number}
+        </div>
 
         {/* Card Content */}
         <div className="text-center">
@@ -150,21 +137,27 @@ function ParallelTile({ parallel, onToggleOwned }: { parallel: Parallel; onToggl
                 Paid ${parallel.purchase_price.toFixed(0)}
               </div>
             )}
-            <button
-              onClick={() => onToggleOwned(parallel.id, false)}
-              className="mt-1 text-xs text-red-400 hover:text-red-300"
-            >
-              Remove
-            </button>
+            {isSignedIn && (
+              <button
+                onClick={() => onToggleOwned(parallel.id, false)}
+                className="mt-1 text-xs text-red-400 hover:text-red-300"
+              >
+                Remove
+              </button>
+            )}
           </div>
         ) : (
           <div className="text-center">
-            <button
-              onClick={() => onToggleOwned(parallel.id, true)}
-              className="text-xs text-blue-400 hover:text-blue-300 font-medium"
-            >
-              + Mark Owned
-            </button>
+            {isSignedIn ? (
+              <button
+                onClick={() => onToggleOwned(parallel.id, true)}
+                className="text-xs text-blue-400 hover:text-blue-300 font-medium"
+              >
+                + Mark Owned
+              </button>
+            ) : (
+              <span className="text-xs text-gray-500">Sign in to track</span>
+            )}
           </div>
         )}
       </div>
@@ -174,7 +167,7 @@ function ParallelTile({ parallel, onToggleOwned }: { parallel: Parallel; onToggl
 
 function CompletionBar({ owned, total, label }: { owned: number; total: number; label: string }) {
   const pct = total > 0 ? (owned / total) * 100 : 0;
-  const isComplete = owned === total;
+  const isComplete = owned === total && total > 0;
 
   return (
     <div className="bg-gray-800/50 rounded-lg p-4">
@@ -201,23 +194,23 @@ function CompletionBar({ owned, total, label }: { owned: number; total: number; 
 
 export default function RainbowPage() {
   const { isSignedIn } = useAuth();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [rainbowData, setRainbowData] = useState<RainbowData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Array<{ player_name: string; set_name: string; set_id: string; card_number: string }>>([]);
+  const [searchResults, setSearchResults] = useState<Array<{ player_name: string; set_name: string; set_id: string }>>([]);
   const [searching, setSearching] = useState(false);
 
-  // Default to Ekitike PSG for demo
-  const [selectedCard, setSelectedCard] = useState({
-    player_name: 'Hugo Ekitike',
-    set_id: '12628365-a025-4158-b355-40bf6e2ae8ed',
-    card_number: '13',
-  });
+  const [selectedCard, setSelectedCard] = useState<{
+    player_name: string;
+    set_id: string;
+  } | null>(null);
 
   const fetchRainbow = useCallback(async () => {
+    if (!selectedCard) return;
+
     setLoading(true);
     try {
-      const res = await fetch(`/api/rainbow?player=${encodeURIComponent(selectedCard.player_name)}&set_id=${selectedCard.set_id}&card_number=${selectedCard.card_number}`);
+      const res = await fetch(`/api/rainbow?player=${encodeURIComponent(selectedCard.player_name)}&set_id=${selectedCard.set_id}`);
       const data = await res.json();
       if (data.success) {
         setRainbowData(data.rainbow);
@@ -230,8 +223,10 @@ export default function RainbowPage() {
   }, [selectedCard]);
 
   useEffect(() => {
-    fetchRainbow();
-  }, [fetchRainbow]);
+    if (selectedCard) {
+      fetchRainbow();
+    }
+  }, [fetchRainbow, selectedCard]);
 
   const handleSearch = async () => {
     if (searchQuery.length < 2) return;
@@ -273,6 +268,13 @@ export default function RainbowPage() {
               <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors">Search</Link>
               <Link href="/labs" className="text-sm text-gray-400 hover:text-white transition-colors">Labs</Link>
               <span className="text-sm text-white font-medium">Rainbow</span>
+              {!isSignedIn && (
+                <SignInButton mode="modal">
+                  <button className="ml-2 px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-lg">
+                    Sign In
+                  </button>
+                </SignInButton>
+              )}
             </div>
           </div>
         </div>
@@ -281,13 +283,16 @@ export default function RainbowPage() {
       <main className="max-w-6xl mx-auto px-4 py-8">
         {/* Search Section */}
         <div className="mb-8">
+          <h1 className="text-2xl font-bold text-white mb-4">Rainbow Tracker</h1>
+          <p className="text-gray-400 mb-4">Search for a player to track their parallel rainbow</p>
+
           <div className="flex gap-3 mb-4">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="Search for a player..."
+              placeholder="Search player name..."
               className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
             />
             <button
@@ -301,15 +306,14 @@ export default function RainbowPage() {
 
           {/* Search Results */}
           {searchResults.length > 0 && (
-            <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden mb-4">
-              {searchResults.slice(0, 10).map((result, i) => (
+            <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden mb-4 max-h-80 overflow-y-auto">
+              {searchResults.map((result, i) => (
                 <button
-                  key={i}
+                  key={`${result.player_name}-${result.set_id}-${i}`}
                   onClick={() => {
                     setSelectedCard({
                       player_name: result.player_name,
                       set_id: result.set_id,
-                      card_number: result.card_number,
                     });
                     setSearchResults([]);
                     setSearchQuery('');
@@ -317,7 +321,7 @@ export default function RainbowPage() {
                   className="w-full px-4 py-3 text-left hover:bg-gray-800 transition-colors border-b border-gray-800 last:border-b-0"
                 >
                   <div className="text-white font-medium">{result.player_name}</div>
-                  <div className="text-sm text-gray-400">{result.set_name} #{result.card_number}</div>
+                  <div className="text-sm text-gray-400">{result.set_name}</div>
                 </button>
               ))}
             </div>
@@ -332,26 +336,30 @@ export default function RainbowPage() {
           <>
             {/* Card Header */}
             <div className="text-center mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
                 {rainbowData.player_name}
-              </h1>
+              </h2>
               <p className="text-gray-400">
-                {rainbowData.set.year} {rainbowData.set.name} #{rainbowData.card_number}
+                {rainbowData.set.year} {rainbowData.set.name}
               </p>
             </div>
 
             {/* Completion Stats */}
             <div className="grid md:grid-cols-2 gap-4 mb-10">
-              <CompletionBar
-                owned={rainbowData.completion.base.owned}
-                total={rainbowData.completion.base.total}
-                label="Base Rainbow"
-              />
-              <CompletionBar
-                owned={rainbowData.completion.auto.owned}
-                total={rainbowData.completion.auto.total}
-                label="Auto Rainbow"
-              />
+              {rainbowData.base_parallels.length > 0 && (
+                <CompletionBar
+                  owned={rainbowData.completion.base.owned}
+                  total={rainbowData.completion.base.total}
+                  label="Base Rainbow"
+                />
+              )}
+              {rainbowData.auto_parallels.length > 0 && (
+                <CompletionBar
+                  owned={rainbowData.completion.auto.owned}
+                  total={rainbowData.completion.auto.total}
+                  label="Auto Rainbow"
+                />
+              )}
             </div>
 
             {/* Sign In Prompt */}
@@ -369,18 +377,19 @@ export default function RainbowPage() {
             {/* Base Parallels */}
             {rainbowData.base_parallels.length > 0 && (
               <section className="mb-10">
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                   <span>Base Parallels</span>
                   <span className="text-sm font-normal text-gray-400">
                     ({rainbowData.completion.base.owned}/{rainbowData.completion.base.total})
                   </span>
-                </h2>
+                </h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
-                  {sortParallels(rainbowData.base_parallels).map((parallel) => (
+                  {rainbowData.base_parallels.map((parallel) => (
                     <ParallelTile
                       key={parallel.id}
                       parallel={parallel}
                       onToggleOwned={handleToggleOwned}
+                      isSignedIn={!!isSignedIn}
                     />
                   ))}
                 </div>
@@ -390,18 +399,19 @@ export default function RainbowPage() {
             {/* Auto Parallels */}
             {rainbowData.auto_parallels.length > 0 && (
               <section>
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                   <span>Autograph Parallels</span>
                   <span className="text-sm font-normal text-gray-400">
                     ({rainbowData.completion.auto.owned}/{rainbowData.completion.auto.total})
                   </span>
-                </h2>
+                </h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
-                  {sortParallels(rainbowData.auto_parallels).map((parallel) => (
+                  {rainbowData.auto_parallels.map((parallel) => (
                     <ParallelTile
                       key={parallel.id}
                       parallel={parallel}
                       onToggleOwned={handleToggleOwned}
+                      isSignedIn={!!isSignedIn}
                     />
                   ))}
                 </div>
@@ -411,7 +421,7 @@ export default function RainbowPage() {
         ) : (
           <div className="text-center py-20">
             <div className="text-5xl mb-4">🌈</div>
-            <h2 className="text-xl text-gray-400">Search for a player to start tracking</h2>
+            <h2 className="text-xl text-gray-400">Search for a player to start tracking their rainbow</h2>
           </div>
         )}
       </main>

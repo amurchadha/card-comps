@@ -19,12 +19,11 @@ export async function GET(request: NextRequest) {
 
     const supabase = getSupabase();
 
-    // Search for distinct player + set + card_number combinations
+    // Search for cards matching player name
     const { data, error } = await supabase
       .from('card_catalog')
       .select(`
         player_name,
-        card_number,
         set_id,
         card_sets (
           id,
@@ -33,20 +32,19 @@ export async function GET(request: NextRequest) {
         )
       `)
       .ilike('player_name', `%${query}%`)
-      .limit(100);
+      .limit(500);
 
     if (error) {
       console.error('Search error:', error);
       return NextResponse.json({ results: [] });
     }
 
-    // Deduplicate by player + set + card_number
+    // Deduplicate by player + set, filter garbage
     const seen = new Set<string>();
     const results: Array<{
       player_name: string;
       set_name: string;
       set_id: string;
-      card_number: string;
     }> = [];
 
     for (const card of data || []) {
@@ -54,22 +52,32 @@ export async function GET(request: NextRequest) {
       const setData = Array.isArray(cardSets) ? cardSets[0] : cardSets;
       if (!setData) continue;
 
-      const key = `${card.player_name}-${setData.id}-${card.card_number}`;
+      // Filter out garbage sets
+      const setName = setData.name.toLowerCase();
+      if (setName.includes('checklist')) continue;
+      if (setName.includes('shop for')) continue;
+      if (setName.includes('ebay')) continue;
+
+      const key = `${card.player_name}-${setData.id}`;
       if (seen.has(key)) continue;
       seen.add(key);
 
       results.push({
         player_name: card.player_name,
         set_name: `${setData.year} ${setData.name}`,
-        set_id: setData.id,
-        card_number: card.card_number
+        set_id: setData.id
       });
     }
 
-    // Sort by player name
-    results.sort((a, b) => a.player_name.localeCompare(b.player_name));
+    // Sort by year (newest first), then by set name
+    results.sort((a, b) => {
+      const yearA = a.set_name.substring(0, 7);
+      const yearB = b.set_name.substring(0, 7);
+      if (yearA !== yearB) return yearB.localeCompare(yearA);
+      return a.set_name.localeCompare(b.set_name);
+    });
 
-    return NextResponse.json({ results: results.slice(0, 20) });
+    return NextResponse.json({ results: results.slice(0, 30) });
 
   } catch (error) {
     console.error('Rainbow search error:', error);

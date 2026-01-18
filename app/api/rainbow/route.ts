@@ -21,8 +21,6 @@ interface ParallelData {
   grading_company?: string;
   last_sale_price?: number;
   last_sale_date?: string;
-  avg_price?: number;
-  listings_count?: number;
 }
 
 export async function GET(request: NextRequest) {
@@ -30,12 +28,11 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const playerName = searchParams.get('player');
     const setId = searchParams.get('set_id');
-    const cardNumber = searchParams.get('card_number');
 
-    if (!playerName || !setId || !cardNumber) {
+    if (!playerName || !setId) {
       return NextResponse.json({
         success: false,
-        error: 'player, set_id, and card_number are required'
+        error: 'player and set_id are required'
       }, { status: 400 });
     }
 
@@ -53,7 +50,7 @@ export async function GET(request: NextRequest) {
       profileId = profile?.id || null;
     }
 
-    // Get all parallels for this card
+    // Get ALL cards for this player in this set (base + auto)
     const { data: catalogCards, error: catalogError } = await supabase
       .from('card_catalog')
       .select(`
@@ -63,7 +60,6 @@ export async function GET(request: NextRequest) {
         subset_name,
         is_autograph,
         parallel_name,
-        print_run,
         card_sets (
           id,
           name,
@@ -72,8 +68,7 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('set_id', setId)
-      .eq('card_number', cardNumber)
-      .ilike('player_name', `%${playerName}%`);
+      .ilike('player_name', playerName);
 
     if (catalogError) {
       console.error('Catalog query error:', catalogError);
@@ -83,7 +78,7 @@ export async function GET(request: NextRequest) {
     if (!catalogCards || catalogCards.length === 0) {
       return NextResponse.json({
         success: false,
-        error: 'No cards found matching criteria'
+        error: 'No cards found for this player in this set'
       }, { status: 404 });
     }
 
@@ -91,11 +86,12 @@ export async function GET(request: NextRequest) {
     const ownedMap = new Map<string, { inventory_id: string; purchase_price?: number; grade?: string; grading_company?: string }>();
 
     if (profileId) {
-      // Query inventory matching this player/card
+      const catalogIds = catalogCards.map(c => c.id);
       const { data: inventory } = await supabase
         .from('inventory')
         .select('id, catalog_id, purchase_price, grade, grading_company')
-        .eq('user_id', profileId);
+        .eq('user_id', profileId)
+        .in('catalog_id', catalogIds);
 
       if (inventory) {
         for (const item of inventory) {
@@ -119,25 +115,32 @@ export async function GET(request: NextRequest) {
       .in('catalog_id', catalogIds)
       .order('sale_date', { ascending: false });
 
-    // Group pricing by catalog_id and calculate stats
-    const pricingMap = new Map<string, { last_sale_price: number; last_sale_date: string; prices: number[] }>();
+    // Get latest price per catalog_id
+    const pricingMap = new Map<string, { last_sale_price: number; last_sale_date: string }>();
     if (pricingData) {
       for (const price of pricingData) {
-        if (!price.catalog_id) continue;
-        if (!pricingMap.has(price.catalog_id)) {
-          pricingMap.set(price.catalog_id, {
-            last_sale_price: price.sale_price,
-            last_sale_date: price.sale_date,
-            prices: []
-          });
-        }
-        pricingMap.get(price.catalog_id)!.prices.push(price.sale_price);
+        if (!price.catalog_id || pricingMap.has(price.catalog_id)) continue;
+        pricingMap.set(price.catalog_id, {
+          last_sale_price: price.sale_price,
+          last_sale_date: price.sale_date
+        });
       }
     }
 
-    // Build parallel data
+    // Build parallel data - separate base and auto
     const baseParallels: ParallelData[] = [];
     const autoParallels: ParallelData[] = [];
+
+    // Sort by a logical parallel order
+    const parallelOrder = ['Base', 'Purple', 'Blue', 'Pink', 'Green', 'Gold', 'Orange', 'Red', 'Black', 'Superfractor'];
+
+    const sortByParallel = (a: ParallelData, b: ParallelData) => {
+      const aName = a.subset_name.replace('Autographs - ', '');
+      const bName = b.subset_name.replace('Autographs - ', '');
+      const aIdx = parallelOrder.findIndex(p => aName.toLowerCase().includes(p.toLowerCase()));
+      const bIdx = parallelOrder.findIndex(p => bName.toLowerCase().includes(p.toLowerCase()));
+      return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
+    };
 
     for (const card of catalogCards) {
       const owned = ownedMap.get(card.id);
@@ -154,9 +157,7 @@ export async function GET(request: NextRequest) {
         grade: owned?.grade,
         grading_company: owned?.grading_company,
         last_sale_price: pricing?.last_sale_price,
-        last_sale_date: pricing?.last_sale_date,
-        avg_price: pricing?.prices.length ? pricing.prices.reduce((a, b) => a + b, 0) / pricing.prices.length : undefined,
-        listings_count: pricing?.prices.length
+        last_sale_date: pricing?.last_sale_date
       };
 
       if (card.is_autograph) {
@@ -166,6 +167,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Sort parallels
+    baseParallels.sort(sortByParallel);
+    autoParallels.sort(sortByParallel);
+
     // Get set info from first card
     const firstCard = catalogCards[0] as unknown as { card_sets: { id: string; name: string; year: string; sport: string } | { id: string; name: string; year: string; sport: string }[] };
     const setInfo = Array.isArray(firstCard.card_sets) ? firstCard.card_sets[0] : firstCard.card_sets;
@@ -174,7 +179,6 @@ export async function GET(request: NextRequest) {
       success: true,
       rainbow: {
         player_name: catalogCards[0].player_name,
-        card_number: cardNumber,
         set: setInfo,
         base_parallels: baseParallels,
         auto_parallels: autoParallels,
