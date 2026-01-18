@@ -52,19 +52,24 @@ export async function GET(request: NextRequest) {
       const setData = Array.isArray(cardSets) ? cardSets[0] : cardSets;
       if (!setData) continue;
 
-      // Filter out garbage sets
-      const setName = setData.name.toLowerCase();
-      if (setName.includes('checklist')) continue;
-      if (setName.includes('shop for')) continue;
-      if (setName.includes('ebay')) continue;
+      // Filter out actual garbage (eBay shop links)
+      const setNameLower = setData.name.toLowerCase();
+      if (setNameLower.includes('shop for')) continue;
+      if (setNameLower.includes('ebay')) continue;
 
       const key = `${card.player_name}-${setData.id}`;
       if (seen.has(key)) continue;
       seen.add(key);
 
+      // Clean up set name - remove "Checklist", "Cards Checklist", etc.
+      let cleanName = setData.name
+        .replace(/\s*Cards?\s*Checklist\s*/gi, '')
+        .replace(/\s*Checklist\s*/gi, '')
+        .trim();
+
       results.push({
         player_name: card.player_name,
-        set_name: `${setData.year} ${setData.name}`,
+        set_name: `${setData.year} ${cleanName}`,
         set_id: setData.id
       });
     }
