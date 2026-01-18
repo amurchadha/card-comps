@@ -67,9 +67,14 @@ export async function GET(request: NextRequest) {
         .replace(/\s*Checklist\s*/gi, '')
         .trim();
 
+      // Don't duplicate year if it's already in the set name
+      const displayName = cleanName.startsWith(setData.year)
+        ? cleanName
+        : `${setData.year} ${cleanName}`;
+
       results.push({
         player_name: card.player_name,
-        set_name: `${setData.year} ${cleanName}`,
+        set_name: displayName,
         set_id: setData.id
       });
     }
