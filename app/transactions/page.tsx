@@ -49,7 +49,9 @@ const PLATFORMS = {
   mercari: { name: 'Mercari', fee: 12.9 },
   comc: { name: 'COMC', fee: 7.5 },
   myslabs: { name: 'MySlabs', fee: 10 },
-  private: { name: 'Private Sale', fee: 0 },
+  fanatics: { name: 'Fanatics Collect', fee: 10 },
+  alt: { name: 'ALT', fee: 3 },
+  private: { name: 'Private Sale', fee: 0, customFee: true },
 };
 
 type PlatformKey = keyof typeof PLATFORMS;
@@ -68,6 +70,7 @@ export default function TransactionsPage() {
     gross_amount: '',
     shipping_cost: '',
     cost_basis: '',
+    custom_fee_pct: '',
     transaction_date: new Date().toISOString().split('T')[0],
     buyer_username: '',
     tracking_number: '',
@@ -113,7 +116,10 @@ export default function TransactionsPage() {
   // Calculate live profit preview
   const profitPreview = useMemo(() => {
     const gross = parseFloat(formData.gross_amount) || 0;
-    const feePct = PLATFORMS[formData.platform].fee;
+    const platformConfig = PLATFORMS[formData.platform];
+    const feePct = formData.platform === 'private'
+      ? (parseFloat(formData.custom_fee_pct) || 0)
+      : platformConfig.fee;
     const fees = gross * (feePct / 100);
     const shipping = parseFloat(formData.shipping_cost) || 0;
     const net = gross - fees - shipping;
@@ -122,7 +128,7 @@ export default function TransactionsPage() {
     const roi = cost > 0 ? (profit / cost) * 100 : 0;
 
     return { gross, feePct, fees, shipping, net, cost, profit, roi };
-  }, [formData.gross_amount, formData.platform, formData.shipping_cost, formData.cost_basis]);
+  }, [formData.gross_amount, formData.platform, formData.shipping_cost, formData.cost_basis, formData.custom_fee_pct]);
 
   const resetForm = () => {
     setFormData({
@@ -131,6 +137,7 @@ export default function TransactionsPage() {
       gross_amount: '',
       shipping_cost: '',
       cost_basis: '',
+      custom_fee_pct: '',
       transaction_date: new Date().toISOString().split('T')[0],
       buyer_username: '',
       tracking_number: '',
@@ -361,6 +368,25 @@ export default function TransactionsPage() {
                     ))}
                   </select>
                 </div>
+
+                {/* Custom Fee (for private sales) */}
+                {formData.platform === 'private' && (
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Custom Fee % (PayPal, Venmo, etc.)</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={formData.custom_fee_pct}
+                        onChange={(e) => setFormData(f => ({ ...f, custom_fee_pct: e.target.value }))}
+                        placeholder="2.9"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 pr-8 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">PayPal G&S: 2.89% • Venmo: 1.9% • Zelle/Cash: 0%</p>
+                  </div>
+                )}
 
                 {/* Sale Amount */}
                 <div className="grid grid-cols-2 gap-3">

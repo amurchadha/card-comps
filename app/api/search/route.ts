@@ -2,6 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
+// D1 Database type
+interface D1Database {
+  prepare(query: string): D1PreparedStatement;
+}
+interface D1PreparedStatement {
+  bind(...values: unknown[]): D1PreparedStatement;
+  first<T = unknown>(): Promise<T | null>;
+  run(): Promise<D1Result>;
+  all<T = unknown>(): Promise<D1Results<T>>;
+}
+interface D1Result {
+  success: boolean;
+  meta: object;
+}
+interface D1Results<T> {
+  results: T[];
+  success: boolean;
+  meta: object;
+}
+
 const RELAY_URL = 'https://relay.steepforce.com';
 
 interface SaleItem {
@@ -147,7 +167,7 @@ export async function POST(request: NextRequest) {
     let db: D1Database | null = null;
     try {
       const { env } = await getCloudflareContext();
-      db = env.DB as D1Database;
+      db = (env as Record<string, unknown>).DB as D1Database;
     } catch {
       console.log('D1 not available - running without cache');
     }
@@ -158,9 +178,9 @@ export async function POST(request: NextRequest) {
         const cache = await db.prepare(`
           SELECT last_fetched FROM search_cache
           WHERE query = ? AND search_type = ?
-        `).bind(query.toLowerCase(), searchType).first();
+        `).bind(query.toLowerCase(), searchType).first<{ last_fetched: string }>();
 
-        const fresh = cache ? isCacheFresh(cache.last_fetched as string) : false;
+        const fresh = cache ? isCacheFresh(cache.last_fetched) : false;
 
         if (fresh) {
           const searchTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 1);
@@ -169,10 +189,10 @@ export async function POST(request: NextRequest) {
 
           const results = await db.prepare(`
             SELECT * FROM sales WHERE ${likeClause} ORDER BY sale_date DESC LIMIT 200
-          `).bind(...likeParams).all();
+          `).bind(...likeParams).all<Record<string, unknown>>();
 
           if (results.results.length > 0) {
-            const items: SaleItem[] = results.results.map((row: Record<string, unknown>) => ({
+            const items: SaleItem[] = results.results.map((row) => ({
               itemId: row.item_id as string,
               title: row.title as string,
               currentPrice: String(row.current_price),
