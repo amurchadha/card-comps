@@ -24,6 +24,34 @@ interface InventoryItem {
   notes: string;
   status: string;
   created_at: string;
+  // ROI fields
+  card_status: 'raw' | 'submitted' | 'in_grading' | 'graded' | 'listed' | 'sold';
+  raw_purchase_price: number;
+  acquisition_shipping: number;
+  acquisition_tax: number;
+  grading_company_used: string;
+  grading_service_level: string;
+  grading_fee: number;
+  grading_insurance: number;
+  inbound_shipping: number;
+  outbound_shipping: number;
+  supply_costs: number;
+  grading_submitted_date: string;
+  grading_received_date: string;
+  expected_grade: string;
+  actual_grade: string;
+  listed_price: number;
+  listed_date: string;
+  sale_price: number;
+  sale_date: string;
+  sale_platform: string;
+  platform_fee_percent: number;
+  platform_fees: number;
+  sale_shipping_cost: number;
+  buyer_paid_shipping: boolean;
+  total_cost_basis: number;
+  net_proceeds: number;
+  net_profit: number;
 }
 
 interface CatalogCard {
@@ -45,6 +73,14 @@ interface CatalogCard {
 
 const PLATFORMS = ['eBay', 'Whatnot', 'Mercari', 'COMC', 'MySlabs', 'Card Show', 'LCS', 'Trade', 'Other'];
 const GRADING_COMPANIES = ['PSA', 'BGS', 'SGC', 'CGC', 'HGA', 'Raw'];
+const CARD_STATUSES = [
+  { value: 'raw', label: 'Raw', color: 'gray' },
+  { value: 'submitted', label: 'Submitted', color: 'yellow' },
+  { value: 'in_grading', label: 'In Grading', color: 'blue' },
+  { value: 'graded', label: 'Graded', color: 'purple' },
+  { value: 'listed', label: 'Listed', color: 'orange' },
+  { value: 'sold', label: 'Sold', color: 'green' },
+] as const;
 
 export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -52,6 +88,7 @@ export default function InventoryPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const api = useApi();
 
   // Catalog search state
@@ -74,6 +111,24 @@ export default function InventoryPage() {
     grading_company: '',
     cert_number: '',
     notes: '',
+    // ROI fields
+    card_status: 'raw' as 'raw' | 'submitted' | 'in_grading' | 'graded' | 'listed' | 'sold',
+    grading_company_used: '',
+    grading_service_level: '',
+    grading_fee: '',
+    inbound_shipping: '',
+    outbound_shipping: '',
+    supply_costs: '',
+    grading_submitted_date: '',
+    grading_received_date: '',
+    expected_grade: '',
+    actual_grade: '',
+    sale_price: '',
+    sale_date: '',
+    sale_platform: '',
+    platform_fee_percent: '',
+    sale_shipping_cost: '',
+    buyer_paid_shipping: false,
   });
 
   const fetchInventory = useCallback(async () => {
@@ -160,6 +215,23 @@ export default function InventoryPage() {
       grading_company: '',
       cert_number: '',
       notes: '',
+      card_status: 'raw' as 'raw' | 'submitted' | 'in_grading' | 'graded' | 'listed' | 'sold',
+      grading_company_used: '',
+      grading_service_level: '',
+      grading_fee: '',
+      inbound_shipping: '',
+      outbound_shipping: '',
+      supply_costs: '',
+      grading_submitted_date: '',
+      grading_received_date: '',
+      expected_grade: '',
+      actual_grade: '',
+      sale_price: '',
+      sale_date: '',
+      sale_platform: '',
+      platform_fee_percent: '',
+      sale_shipping_cost: '',
+      buyer_paid_shipping: false,
     });
   };
 
@@ -171,6 +243,13 @@ export default function InventoryPage() {
       purchase_price: parseFloat(formData.purchase_price) || 0,
       purchase_tax: parseFloat(formData.purchase_tax) || 0,
       shipping_paid: parseFloat(formData.shipping_paid) || 0,
+      grading_fee: parseFloat(formData.grading_fee) || 0,
+      inbound_shipping: parseFloat(formData.inbound_shipping) || 0,
+      outbound_shipping: parseFloat(formData.outbound_shipping) || 0,
+      supply_costs: parseFloat(formData.supply_costs) || 0,
+      sale_price: parseFloat(formData.sale_price) || null,
+      platform_fee_percent: parseFloat(formData.platform_fee_percent) || null,
+      sale_shipping_cost: parseFloat(formData.sale_shipping_cost) || 0,
     };
 
     try {
@@ -223,18 +302,40 @@ export default function InventoryPage() {
       grading_company: item.grading_company || '',
       cert_number: item.cert_number || '',
       notes: item.notes || '',
+      card_status: item.card_status || 'raw',
+      grading_company_used: item.grading_company_used || '',
+      grading_service_level: item.grading_service_level || '',
+      grading_fee: item.grading_fee?.toString() || '',
+      inbound_shipping: item.inbound_shipping?.toString() || '',
+      outbound_shipping: item.outbound_shipping?.toString() || '',
+      supply_costs: item.supply_costs?.toString() || '',
+      grading_submitted_date: item.grading_submitted_date || '',
+      grading_received_date: item.grading_received_date || '',
+      expected_grade: item.expected_grade || '',
+      actual_grade: item.actual_grade || '',
+      sale_price: item.sale_price?.toString() || '',
+      sale_date: item.sale_date || '',
+      sale_platform: item.sale_platform || '',
+      platform_fee_percent: item.platform_fee_percent?.toString() || '',
+      sale_shipping_cost: item.sale_shipping_cost?.toString() || '',
+      buyer_paid_shipping: item.buyer_paid_shipping || false,
     });
     setShowAddModal(true);
   };
 
-  const filteredItems = items.filter(item =>
-    item.player_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.card_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.notes?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredItems = items.filter(item => {
+    const matchesSearch = item.player_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.card_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.notes?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || item.card_status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
-  const totalValue = items.reduce((sum, item) => sum + (item.total_cost || 0), 0);
+  const totalValue = items.reduce((sum, item) => sum + (item.total_cost_basis || item.total_cost || 0), 0);
   const totalCards = items.length;
+  const soldItems = items.filter(i => i.card_status === 'sold');
+  const totalProfit = soldItems.reduce((sum, item) => sum + (item.net_profit || 0), 0);
+  const gradedCount = items.filter(i => ['graded', 'listed', 'sold'].includes(i.card_status)).length;
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -271,27 +372,59 @@ export default function InventoryPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
             <div className="text-gray-400 text-sm">Total Cards</div>
             <div className="text-2xl font-bold text-white">{totalCards}</div>
           </div>
           <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-            <div className="text-gray-400 text-sm">Total Invested</div>
+            <div className="text-gray-400 text-sm">Cost Basis</div>
             <div className="text-2xl font-bold text-blue-400">{formatMoney(totalValue)}</div>
           </div>
           <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-            <div className="text-gray-400 text-sm">Avg Cost/Card</div>
-            <div className="text-2xl font-bold text-green-400">
-              {formatMoney(totalCards > 0 ? totalValue / totalCards : 0)}
-            </div>
+            <div className="text-gray-400 text-sm">Graded</div>
+            <div className="text-2xl font-bold text-purple-400">{gradedCount}</div>
           </div>
           <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-            <div className="text-gray-400 text-sm">Graded Cards</div>
-            <div className="text-2xl font-bold text-purple-400">
-              {items.filter(i => i.grading_company && i.grading_company !== 'Raw').length}
+            <div className="text-gray-400 text-sm">Total Profit</div>
+            <div className={`text-2xl font-bold ${totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {totalProfit >= 0 ? '+' : ''}{formatMoney(totalProfit)}
             </div>
+            {soldItems.length > 0 && (
+              <div className="text-xs text-gray-500">{soldItems.length} sold</div>
+            )}
           </div>
+        </div>
+
+        {/* Status Filter Tabs */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              statusFilter === 'all'
+                ? 'bg-white text-gray-900'
+                : 'bg-gray-800 text-gray-400 hover:text-white'
+            }`}
+          >
+            All ({items.length})
+          </button>
+          {CARD_STATUSES.map(status => {
+            const count = items.filter(i => i.card_status === status.value).length;
+            if (count === 0) return null;
+            return (
+              <button
+                key={status.value}
+                onClick={() => setStatusFilter(status.value)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  statusFilter === status.value
+                    ? `bg-${status.color}-600 text-white`
+                    : 'bg-gray-800 text-gray-400 hover:text-white'
+                }`}
+              >
+                {status.label} ({count})
+              </button>
+            );
+          })}
         </div>
 
         {/* Search */}
@@ -356,27 +489,64 @@ export default function InventoryPage() {
                   </div>
                 </div>
 
-                {/* Grade badge */}
-                {item.grading_company && item.grade && (
-                  <div className="mb-3">
+                {/* Status + Grade badges */}
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {item.card_status && (
+                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${
+                      item.card_status === 'raw' ? 'bg-gray-600/20 text-gray-400 border border-gray-600/30' :
+                      item.card_status === 'submitted' ? 'bg-yellow-600/20 text-yellow-400 border border-yellow-600/30' :
+                      item.card_status === 'in_grading' ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30' :
+                      item.card_status === 'graded' ? 'bg-purple-600/20 text-purple-400 border border-purple-600/30' :
+                      item.card_status === 'listed' ? 'bg-orange-600/20 text-orange-400 border border-orange-600/30' :
+                      'bg-green-600/20 text-green-400 border border-green-600/30'
+                    }`}>
+                      {CARD_STATUSES.find(s => s.value === item.card_status)?.label || item.card_status}
+                    </span>
+                  )}
+                  {item.actual_grade && item.grading_company_used && (
+                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-purple-600/20 text-purple-400 border border-purple-600/30">
+                      {item.grading_company_used} {item.actual_grade}
+                    </span>
+                  )}
+                  {!item.actual_grade && item.grading_company && item.grade && (
                     <span className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-purple-600/20 text-purple-400 border border-purple-600/30">
                       {item.grading_company} {item.grade}
                     </span>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Cost Basis</span>
-                    <span className="text-white font-medium">{formatMoney(item.total_cost)}</span>
+                    <span className="text-white font-medium">{formatMoney(item.total_cost_basis || item.total_cost)}</span>
                   </div>
-                  {item.purchase_platform && (
+                  {item.card_status === 'sold' && item.sale_price && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Sold For</span>
+                        <span className="text-white font-medium">{formatMoney(item.sale_price)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Profit</span>
+                        <span className={`font-bold ${item.net_profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {item.net_profit >= 0 ? '+' : ''}{formatMoney(item.net_profit)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  {item.card_status === 'listed' && item.listed_price && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Listed At</span>
+                      <span className="text-orange-400 font-medium">{formatMoney(item.listed_price)}</span>
+                    </div>
+                  )}
+                  {!['sold', 'listed'].includes(item.card_status) && item.purchase_platform && (
                     <div className="flex justify-between">
                       <span className="text-gray-500">Source</span>
                       <span className="text-gray-300">{item.purchase_platform}</span>
                     </div>
                   )}
-                  {item.purchase_date && (
+                  {item.purchase_date && !['sold', 'listed'].includes(item.card_status) && (
                     <div className="flex justify-between">
                       <span className="text-gray-500">Purchased</span>
                       <span className="text-gray-300">
@@ -417,6 +587,32 @@ export default function InventoryPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Card Status */}
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Status</label>
+                  <div className="flex flex-wrap gap-2">
+                    {CARD_STATUSES.map(status => (
+                      <button
+                        key={status.value}
+                        type="button"
+                        onClick={() => setFormData(f => ({ ...f, card_status: status.value }))}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                          formData.card_status === status.value
+                            ? status.value === 'raw' ? 'bg-gray-600 text-white' :
+                              status.value === 'submitted' ? 'bg-yellow-600 text-white' :
+                              status.value === 'in_grading' ? 'bg-blue-600 text-white' :
+                              status.value === 'graded' ? 'bg-purple-600 text-white' :
+                              status.value === 'listed' ? 'bg-orange-600 text-white' :
+                              'bg-green-600 text-white'
+                            : 'bg-gray-800 text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {status.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Card Info */}
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Player Name *</label>
@@ -441,34 +637,156 @@ export default function InventoryPage() {
                   />
                 </div>
 
-                {/* Grading */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">Grading Company</label>
-                    <select
-                      value={formData.grading_company}
-                      onChange={(e) => setFormData(f => ({ ...f, grading_company: e.target.value }))}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                    >
-                      <option value="">Select...</option>
-                      {GRADING_COMPANIES.map(gc => (
-                        <option key={gc} value={gc}>{gc}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">Grade</label>
-                    <input
-                      type="text"
-                      value={formData.grade}
-                      onChange={(e) => setFormData(f => ({ ...f, grade: e.target.value }))}
-                      placeholder="e.g., 10, 9.5"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                    />
-                  </div>
-                </div>
+                {/* Grading Info - show when not raw */}
+                {formData.card_status !== 'raw' && (
+                  <div className="border-t border-gray-800 pt-4">
+                    <h3 className="text-sm font-medium text-gray-300 mb-3">Grading Info</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Grading Company</label>
+                        <select
+                          value={formData.grading_company_used || formData.grading_company}
+                          onChange={(e) => setFormData(f => ({ ...f, grading_company_used: e.target.value, grading_company: e.target.value }))}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                        >
+                          <option value="">Select...</option>
+                          {GRADING_COMPANIES.filter(gc => gc !== 'Raw').map(gc => (
+                            <option key={gc} value={gc}>{gc}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">
+                          {['graded', 'listed', 'sold'].includes(formData.card_status) ? 'Actual Grade' : 'Expected Grade'}
+                        </label>
+                        <input
+                          type="text"
+                          value={['graded', 'listed', 'sold'].includes(formData.card_status) ? formData.actual_grade : formData.expected_grade}
+                          onChange={(e) => setFormData(f => ({
+                            ...f,
+                            ...((['graded', 'listed', 'sold'].includes(f.card_status))
+                              ? { actual_grade: e.target.value, grade: e.target.value }
+                              : { expected_grade: e.target.value })
+                          }))}
+                          placeholder="e.g., 10, 9.5"
+                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                        />
+                      </div>
+                    </div>
 
-                {formData.grading_company && formData.grading_company !== 'Raw' && (
+                    {/* Grading Costs */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Grading Fee</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={formData.grading_fee}
+                            onChange={(e) => setFormData(f => ({ ...f, grading_fee: e.target.value }))}
+                            placeholder="0"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-7 pr-2 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Supplies</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={formData.supply_costs}
+                            onChange={(e) => setFormData(f => ({ ...f, supply_costs: e.target.value }))}
+                            placeholder="0"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-7 pr-2 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Ship To</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={formData.inbound_shipping}
+                            onChange={(e) => setFormData(f => ({ ...f, inbound_shipping: e.target.value }))}
+                            placeholder="0"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-7 pr-2 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Ship Back</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={formData.outbound_shipping}
+                            onChange={(e) => setFormData(f => ({ ...f, outbound_shipping: e.target.value }))}
+                            placeholder="0"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-7 pr-2 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mt-3">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Submitted Date</label>
+                        <input
+                          type="date"
+                          value={formData.grading_submitted_date}
+                          onChange={(e) => setFormData(f => ({ ...f, grading_submitted_date: e.target.value }))}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Received Date</label>
+                        <input
+                          type="date"
+                          value={formData.grading_received_date}
+                          onChange={(e) => setFormData(f => ({ ...f, grading_received_date: e.target.value }))}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Legacy Grading fields for raw cards */}
+                {formData.card_status === 'raw' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-1">Grading Company</label>
+                      <select
+                        value={formData.grading_company}
+                        onChange={(e) => setFormData(f => ({ ...f, grading_company: e.target.value }))}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                      >
+                        <option value="">Select...</option>
+                        {GRADING_COMPANIES.map(gc => (
+                          <option key={gc} value={gc}>{gc}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-1">Grade</label>
+                      <input
+                        type="text"
+                        value={formData.grade}
+                        onChange={(e) => setFormData(f => ({ ...f, grade: e.target.value }))}
+                        placeholder="e.g., 10, 9.5"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {formData.grading_company && formData.grading_company !== 'Raw' && formData.card_status === 'raw' && (
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Cert Number</label>
                     <input
@@ -554,6 +872,94 @@ export default function InventoryPage() {
                     />
                   </div>
                 </div>
+
+                {/* Sale Info - show when listed or sold */}
+                {['listed', 'sold'].includes(formData.card_status) && (
+                  <div className="border-t border-gray-800 pt-4">
+                    <h3 className="text-sm font-medium text-gray-300 mb-3">Sale Info</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">
+                          {formData.card_status === 'sold' ? 'Sale Price' : 'Listed Price'}
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={formData.sale_price}
+                            onChange={(e) => setFormData(f => ({ ...f, sale_price: e.target.value }))}
+                            placeholder="0.00"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-7 pr-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Platform</label>
+                        <select
+                          value={formData.sale_platform}
+                          onChange={(e) => setFormData(f => ({ ...f, sale_platform: e.target.value }))}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                        >
+                          <option value="">Select...</option>
+                          {PLATFORMS.map(p => (
+                            <option key={p} value={p}>{p}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 mt-3">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Platform Fee %</label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={formData.platform_fee_percent}
+                            onChange={(e) => setFormData(f => ({ ...f, platform_fee_percent: e.target.value }))}
+                            placeholder="13"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 pr-7 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Ship Cost</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={formData.sale_shipping_cost}
+                            onChange={(e) => setFormData(f => ({ ...f, sale_shipping_cost: e.target.value }))}
+                            placeholder="0"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-7 pr-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Sale Date</label>
+                        <input
+                          type="date"
+                          value={formData.sale_date}
+                          onChange={(e) => setFormData(f => ({ ...f, sale_date: e.target.value }))}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.buyer_paid_shipping}
+                          onChange={(e) => setFormData(f => ({ ...f, buyer_paid_shipping: e.target.checked }))}
+                          className="w-4 h-4 rounded bg-gray-800 border-gray-700"
+                        />
+                        Buyer paid shipping separately
+                      </label>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Notes</label>
