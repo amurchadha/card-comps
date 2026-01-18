@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { getClerkUserId } from '@/lib/auth-helper';
+
+function getSupabase() {
+  return createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 interface ParallelData {
   id: string;
@@ -32,7 +39,7 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const supabase = createServerSupabase();
+    const supabase = getSupabase();
     const userId = await getClerkUserId();
 
     // Get user profile if authenticated
