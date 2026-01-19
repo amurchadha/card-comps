@@ -420,6 +420,9 @@ async function processSetUrl(url: string, sport: string) {
 }
 
 async function crawlCategoryPage(url: string, sport: string) {
+  if (seen.has(url)) return;
+  seen.add(url);
+
   console.log(`\n=== Crawling: ${url} ===`);
   const html = await fetchPage(url);
   if (!html) {
@@ -434,11 +437,17 @@ async function crawlCategoryPage(url: string, sport: string) {
     await processSetUrl(setUrl, sport);
   }
 
-  // Check for pagination
-  const nextPageMatch = html.match(/href="([^"]+page\/\d+[^"]*)"/);
-  if (nextPageMatch && !seen.has(nextPageMatch[1])) {
-    await delay(DELAY_MS);
-    await crawlCategoryPage(nextPageMatch[1], sport);
+  // Check for pagination - only continue if we found sets on this page
+  if (setUrls.length > 0) {
+    const nextPageMatch = html.match(/href="([^"]+page\/\d+[^"]*)"/);
+    if (nextPageMatch) {
+      const nextUrl = nextPageMatch[1].startsWith('http') ? nextPageMatch[1] : `${BASE_URL}${nextPageMatch[1]}`;
+      if (!seen.has(nextUrl)) {
+        seen.add(nextUrl);
+        await delay(DELAY_MS);
+        await crawlCategoryPage(nextUrl, sport);
+      }
+    }
   }
 }
 
