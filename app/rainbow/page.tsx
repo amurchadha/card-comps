@@ -2,10 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import { useAuth } from '@clerk/nextjs';
-
-const SignInButton = dynamic(() => import('@clerk/nextjs').then(m => m.SignInButton), { ssr: false });
 
 interface Parallel {
   id: string;
@@ -189,6 +186,12 @@ function CompletionBar({ owned, total, label }: { owned: number; total: number; 
 export default function RainbowPage() {
   const { isSignedIn } = useAuth();
   const [loading, setLoading] = useState(false);
+
+  const handleSignIn = async () => {
+    const { useClerk } = await import('@clerk/nextjs');
+    // This is a workaround - redirect to sign-in page instead
+    window.location.href = '/sign-in';
+  };
   const [rainbowData, setRainbowData] = useState<RainbowData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Array<{ player_name: string; set_name: string; set_id: string }>>([]);
@@ -263,11 +266,12 @@ export default function RainbowPage() {
               <Link href="/labs" className="text-sm text-gray-400 hover:text-white transition-colors">Labs</Link>
               <span className="text-sm text-white font-medium">Rainbow</span>
               {!isSignedIn && (
-                <SignInButton mode="modal">
-                  <button className="ml-2 px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-lg">
-                    Sign In
-                  </button>
-                </SignInButton>
+                <button
+                  onClick={handleSignIn}
+                  className="ml-2 px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-lg"
+                >
+                  Sign In
+                </button>
               )}
             </div>
           </div>
@@ -360,11 +364,12 @@ export default function RainbowPage() {
             {!isSignedIn && (
               <div className="bg-blue-900/30 border border-blue-800 rounded-lg p-4 mb-8 text-center">
                 <p className="text-gray-300 mb-3">Sign in to track your rainbow progress</p>
-                <SignInButton mode="modal">
-                  <button className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
-                    Sign In
-                  </button>
-                </SignInButton>
+                <button
+                  onClick={handleSignIn}
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+                >
+                  Sign In
+                </button>
               </div>
             )}
 

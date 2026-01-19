@@ -133,15 +133,11 @@ export async function GET(request: NextRequest) {
     const baseParallels: ParallelData[] = [];
     const autoParallels: ParallelData[] = [];
 
-    // Sort by a logical parallel order
-    const parallelOrder = ['Base', 'Purple', 'Blue', 'Pink', 'Green', 'Gold', 'Orange', 'Red', 'Black', 'Superfractor'];
-
-    const sortByParallel = (a: ParallelData, b: ParallelData) => {
-      const aName = a.subset_name.replace('Autographs - ', '');
-      const bName = b.subset_name.replace('Autographs - ', '');
-      const aIdx = parallelOrder.findIndex(p => aName.toLowerCase().includes(p.toLowerCase()));
-      const bIdx = parallelOrder.findIndex(p => bName.toLowerCase().includes(p.toLowerCase()));
-      return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
+    // Sort by print_run ascending (rarest first)
+    const sortByRarity = (a: ParallelData, b: ParallelData) => {
+      const aRun = a.print_run ?? 9999;
+      const bRun = b.print_run ?? 9999;
+      return aRun - bRun;
     };
 
     for (const card of catalogCards) {
@@ -170,9 +166,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Sort parallels
-    baseParallels.sort(sortByParallel);
-    autoParallels.sort(sortByParallel);
+    // Sort parallels by rarity (lowest print run first)
+    baseParallels.sort(sortByRarity);
+    autoParallels.sort(sortByRarity);
 
     // Get set info from first card
     const firstCard = catalogCards[0] as unknown as { card_sets: { id: string; name: string; year: string; sport: string } | { id: string; name: string; year: string; sport: string }[] };
