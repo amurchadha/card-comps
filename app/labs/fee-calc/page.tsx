@@ -1,7 +1,16 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+
+const CURRENCIES = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
+];
 
 const PLATFORMS = [
   { id: 'ebay', name: 'eBay', fee: 13.25, paymentFee: 0, note: '13.25% final value fee' },
@@ -20,14 +29,46 @@ export default function FeeCalcPage() {
   const [shippingCost, setShippingCost] = useState('');
   const [customFee, setCustomFee] = useState('');
   const [costBasis, setCostBasis] = useState('');
+  const [currency, setCurrency] = useState('USD');
+  const [exchangeRate, setExchangeRate] = useState<number | null>(null);
+  const [includeTariff, setIncludeTariff] = useState(false);
+  const [loadingRate, setLoadingRate] = useState(false);
+
+  // Fetch exchange rate when currency changes
+  useEffect(() => {
+    if (currency === 'USD') {
+      setExchangeRate(null);
+      return;
+    }
+    setLoadingRate(true);
+    // Using a free exchange rate API
+    fetch(`https://api.exchangerate-api.com/v4/latest/${currency}`)
+      .then(res => res.json())
+      .then(data => {
+        setExchangeRate(data.rates?.USD || null);
+        setLoadingRate(false);
+      })
+      .catch(() => {
+        setExchangeRate(null);
+        setLoadingRate(false);
+      });
+  }, [currency]);
 
   const selectedPlatform = PLATFORMS.find(p => p.id === platform) || PLATFORMS[0];
   const isPrivate = platform === 'private';
 
   const calculations = useMemo(() => {
-    const sale = parseFloat(salePrice) || 0;
+    const rawPrice = parseFloat(salePrice) || 0;
     const shipping = parseFloat(shippingCost) || 0;
-    const cost = parseFloat(costBasis) || 0;
+    const rawCost = parseFloat(costBasis) || 0;
+
+    // Convert to USD if needed
+    const sale = currency !== 'USD' && exchangeRate ? rawPrice * exchangeRate : rawPrice;
+    let cost = currency !== 'USD' && exchangeRate ? rawCost * exchangeRate : rawCost;
+
+    // Add 15% tariff if selected
+    const tariffAmount = includeTariff ? cost * 0.15 : 0;
+    cost = cost + tariffAmount;
 
     // Platform fees
     let platformFee = 0;
@@ -52,6 +93,7 @@ export default function FeeCalcPage() {
     const effectiveFeeRate = sale > 0 ? (totalFees / sale) * 100 : 0;
 
     return {
+      rawPrice,
       sale,
       platformFee,
       paymentFee,
@@ -59,12 +101,15 @@ export default function FeeCalcPage() {
       netAfterFees,
       shipping,
       netAfterShipping,
+      rawCost,
       cost,
+      tariffAmount,
       profit,
       roi,
       effectiveFeeRate,
+      exchangeRate: currency !== 'USD' ? exchangeRate : null,
     };
-  }, [salePrice, platform, shippingCost, customFee, costBasis, selectedPlatform, isPrivate]);
+  }, [salePrice, platform, shippingCost, customFee, costBasis, selectedPlatform, isPrivate, currency, exchangeRate, includeTariff]);
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -177,10 +222,10 @@ export default function FeeCalcPage() {
             </div>
 
             {/* Cost Basis */}
-            <div>
+            <div className="mb-5">
               <label className="block text-sm text-gray-400 mb-2">Cost Basis (optional, for profit calc)</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">{CURRENCIES.find(c => c.code === currency)?.symbol || '$'}</span>
                 <input
                   type="number"
                   step="0.01"
@@ -190,6 +235,40 @@ export default function FeeCalcPage() {
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-8 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                 />
               </div>
+            </div>
+
+            {/* Currency Conversion */}
+            <div className="mb-5">
+              <label className="block text-sm text-gray-400 mb-2">Currency</label>
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.symbol} {c.code} - {c.name}
+                  </option>
+                ))}
+              </select>
+              {loadingRate && <p className="text-xs text-gray-500 mt-1">Loading exchange rate...</p>}
+              {currency !== 'USD' && exchangeRate && (
+                <p className="text-xs text-green-400 mt-1">1 {currency} = ${exchangeRate.toFixed(4)} USD</p>
+              )}
+            </div>
+
+            {/* Import Tariff */}
+            <div>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeTariff}
+                  onChange={(e) => setIncludeTariff(e.target.checked)}
+                  className="w-5 h-5 rounded bg-gray-800 border-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900"
+                />
+                <span className="text-gray-300">Include 15% import tariff</span>
+              </label>
+              <p className="text-xs text-gray-500 mt-1 ml-8">For international purchases (e.g., from Germany/EU)</p>
             </div>
           </div>
 
@@ -243,12 +322,21 @@ export default function FeeCalcPage() {
                   <span className="text-white font-medium">Net Proceeds</span>
                   <span className="text-white font-bold">{formatMoney(calculations.netAfterShipping)}</span>
                 </div>
-                {calculations.cost > 0 && (
+                {calculations.rawCost > 0 && (
                   <>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Cost Basis</span>
-                      <span className="text-gray-300">-{formatMoney(calculations.cost)}</span>
+                      <span className="text-gray-400">
+                        Cost Basis
+                        {calculations.exchangeRate && ` (${CURRENCIES.find(c => c.code === currency)?.symbol}${calculations.rawCost.toFixed(2)} × ${calculations.exchangeRate.toFixed(4)})`}
+                      </span>
+                      <span className="text-gray-300">-{formatMoney(calculations.rawCost * (calculations.exchangeRate || 1))}</span>
                     </div>
+                    {calculations.tariffAmount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Import Tariff (15%)</span>
+                        <span className="text-red-400">-{formatMoney(calculations.tariffAmount)}</span>
+                      </div>
+                    )}
                     <div className="border-t border-gray-700 pt-3 flex justify-between">
                       <span className={`font-medium ${calculations.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {calculations.profit >= 0 ? 'Profit' : 'Loss'}

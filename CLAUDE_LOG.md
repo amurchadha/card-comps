@@ -21,6 +21,12 @@
   - Profit/ROI display on sold cards
   - Total profit in stats
 
+### 2026-01-19
+- [x] Rainbow Tracker: Use actual print_run from database (not hardcoded)
+- [x] Rainbow Tracker: Sort parallels by rarity (lowest print_run first)
+- [x] Rainbow Tracker: Fix Sign In button (redirect to /sign-in)
+- [x] PSG Chrome set data: 8 parallels per player with correct print runs
+
 ## Pending Work
 - [ ] (none currently)
 
