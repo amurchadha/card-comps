@@ -26,7 +26,7 @@ const PLATFORMS = [
 type Mode = 'seller' | 'buyer';
 
 export default function FeeCalcPage() {
-  const [mode, setMode] = useState<Mode>('buyer');
+  const [mode, setMode] = useState<Mode>('seller');
 
   // Seller mode state
   const [salePrice, setSalePrice] = useState('');
@@ -218,16 +218,6 @@ export default function FeeCalcPage() {
         <div className="flex justify-center mb-8">
           <div className="bg-gray-900 rounded-lg p-1 inline-flex">
             <button
-              onClick={() => setMode('buyer')}
-              className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                mode === 'buyer'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              🛒 Buying
-            </button>
-            <button
               onClick={() => setMode('seller')}
               className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
                 mode === 'seller'
@@ -236,6 +226,16 @@ export default function FeeCalcPage() {
               }`}
             >
               💰 Selling
+            </button>
+            <button
+              onClick={() => setMode('buyer')}
+              className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                mode === 'buyer'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              🛒 Buying
             </button>
           </div>
         </div>
